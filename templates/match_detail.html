@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Match Details</title>
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid black;
+      }
+
+      th,
+      td {
+        padding: 10px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .lineups-container {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .lineup {
+        width: 48%; /* Split the width to show side by side, accounting for some margin */
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Match Details</h1>
+    <table>
+      <tr>
+        <th>Teams</th>
+        <td>{{ match.homeTeam.name }} vs {{ match.awayTeam.name }}</td>
+      </tr>
+      <tr>
+        <th>Score</th>
+        <td>{{ match.homeScore.display }} - {{ match.awayScore.display }}</td>
+      </tr>
+      <tr>
+        <th>Status</th>
+        <td>{{ match.status.description }}</td>
+      </tr>
+      <tr>
+        <th>Start Time</th>
+        <td>
+          {{ (match.startTimestamp|float)|datetimeformat('%d/%m/%Y %H:%M') }}
+        </td>
+      </tr>
+      <tr>
+        <th>Tournament</th>
+        <td>{{ match.tournament.name }}</td>
+      </tr>
+      <tr>
+        <th>Venue</th>
+        <td>
+          {{ match.venue.stadium.name }}, {{ match.venue.city.name }}, {{
+          match.venue.country.name }}
+        </td>
+      </tr>
+      <tr>
+        <th>Referee</th>
+        <td>{{ match.referee.name }}</td>
+      </tr>
+    </table>
+    <br />
+    <a href="{{ url_for('fixtures') }}">Back to Fixtures</a>
+
+    <h2>Team Lineups</h2>
+    <div class="lineups-container">
+      <!-- Home Team Lineup -->
+      <div class="lineup">
+        <h3>{{ match.homeTeam.name }} ({{ lineups.home.formation }})</h3>
+        <h4>Starting XI</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Jersey Number</th>
+              <th>Player Name</th>
+              <th>Rating</th>
+              <th>Fouls</th>
+              <th>Position</th>
+              <th>Country</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in lineups.home.players if not player.substitute %}
+            <tr>
+              <td>{{ player.jerseyNumber }}</td>
+              <td>{{ player.player.name }}</td>
+              <td>
+                {{ player.statistics.rating if player.statistics.rating else '-'
+                }}
+              </td>
+              <td>
+                {{ player.statistics.fouls if player.statistics.fouls else '-'
+                }}
+              </td>
+              <td>{{ player.position }}</td>
+              <td>{{ player.player.country.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <h4>Substitutes</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Jersey Number</th>
+              <th>Player Name</th>
+              <th>Rating</th>
+              <th>Fouls</th>
+              <th>Position</th>
+              <th>Country</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in lineups.home.players if player.substitute %}
+            <tr>
+              <td>{{ player.jerseyNumber }}</td>
+              <td>{{ player.player.name }}</td>
+              <td>
+                {{ player.statistics.rating if player.statistics.rating else '-'
+                }}
+              </td>
+              <td>
+                {{ player.statistics.fouls if player.statistics.fouls else '-'
+                }}
+              </td>
+              <td>{{ player.position }}</td>
+              <td>{{ player.player.country.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Away Team Lineup -->
+      <div class="lineup">
+        <h3>{{ match.awayTeam.name }} ({{ lineups.away.formation }})</h3>
+        <h4>Starting XI</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Jersey Number</th>
+              <th>Player Name</th>
+              <th>Rating</th>
+              <th>Fouls</th>
+              <th>Position</th>
+              <th>Country</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in lineups.away.players if not player.substitute %}
+            <tr>
+              <td>{{ player.jerseyNumber }}</td>
+              <td>{{ player.player.name }}</td>
+              <td>
+                {{ player.statistics.rating if player.statistics.rating else '-'
+                }}
+              </td>
+              <td>
+                {{ player.statistics.fouls if player.statistics.fouls else '-'
+                }}
+              </td>
+              <td>{{ player.position }}</td>
+              <td>{{ player.player.country.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <h4>Substitutes</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Jersey Number</th>
+              <th>Player Name</th>
+              <th>Rating</th>
+              <th>Fouls</th>
+              <th>Position</th>
+              <th>Country</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in lineups.away.players if player.substitute %}
+            <tr>
+              <td>{{ player.jerseyNumber }}</td>
+              <td>{{ player.player.name }}</td>
+              <td>
+                {{ player.statistics.rating if player.statistics.rating else '-'
+                }}
+              </td>
+              <td>
+                {{ player.statistics.fouls if player.statistics.fouls else '-'
+                }}
+              </td>
+              <td>{{ player.position }}</td>
+              <td>{{ player.player.country.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
