@@ -3,6 +3,7 @@ import requests
 from datetime import datetime
 from requests.exceptions import JSONDecodeError
 from flask_caching import Cache
+import time
 
 
 app = Flask(__name__)
@@ -165,6 +166,7 @@ def match_detail(match_id):
 
 @app.route("/team/<int:team_id>")
 def team_detail(team_id):
+    start_time = time.time()
     # Fetch team details
     team_url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}"
     team_response = requests.get(team_url, headers=HEADERS)
@@ -270,15 +272,20 @@ def team_detail(team_id):
         avg_minutes_played[player_id] = avg_minutes
 
         # Pass fouls_data, cards_data, and avg_minutes_played to your template
-    return render_template(
-        "team_detail.html",
-        team=team,
-        players=players,
-        matches=last_5_matches,
-        fouls_data=fouls_data,
-        cards_data=cards_data,
-        avg_minutes_played=avg_minutes_played,
-    )
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"Execution time: {elapsed_time:.2f} seconds")
+
+        return render_template(
+            "team_detail.html",
+            team=team,
+            players=players,
+            matches=last_5_matches,
+            fouls_data=fouls_data,
+            cards_data=cards_data,
+            avg_minutes_played=avg_minutes_played,
+        )
 
 
 if __name__ == "__main__":

@@ -47,6 +47,7 @@
       td {
         padding: 8px 15px;
         border: 1px solid #ddd;
+        font-size: 0.875rem;
       }
 
       th {
@@ -274,13 +275,26 @@
   </body>
 
   <script>
+    function hideData() {
+      // hide all data elements
+      let allDataElements = document.querySelectorAll(".data-container");
+      allDataElements.forEach((element) => {
+        element.style.display = "none";
+      });
+    }
+
     function highlightData(selector) {
-      clearHighlights();
+      hideData(); // hide all data elements
+      clearHighlights(); // clear previous highlights
+
       let dataElements = document.querySelectorAll(selector);
 
+      // Show the selected data elements and apply the necessary highlights
       dataElements.forEach((element) => {
         let value = parseInt(element.textContent);
         let container = element.closest(".data-container"); // get the parent container
+        container.style.display = "block"; // Show the selected data elements
+
         if (value === 1) {
           container.classList.add("highlight-green");
         } else if (value === 2) {
@@ -309,7 +323,9 @@
     });
 
     $("#myTable").DataTable({
-      order: [[1, "desc"]], // Assuming the minutes played is the second column (0-indexed)
+      order: [[1, "desc"]],
+      paging: false,
+      lengthChange: false, // Assuming the minutes played is the second column (0-indexed)
     });
 
     $(document).ready(function () {
