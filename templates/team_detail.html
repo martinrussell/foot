@@ -118,36 +118,59 @@
           <td>{{ player_data.player.preferredFoot }}</td>
           {% for match in matches %}
           <td>
-            Was Fouled:
-            <span data-was-fouled
-              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
-              {}).get('wasFouled', 'No data') }}</span
-            ><br />
-            Fouls:
-            <span data-fouls
-              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
-              {}).get('fouls', 'No data') }}</span
-            ><br />
-            Shots Off Target:
-            <span data-shots-off
-              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
-              {}).get('shotOffTarget', 'No data') }}</span
-            ><br />
-            Shots On Target:
-            <span data-shots-on
-              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
-              {}).get('shotOnTarget', 'No data') }}</span
-            ><br />
-            Yellow Cards:
-            <span data-yellow
-              >{{ cards_data.get(player_data.player.id, {}).get(match.id,
-              {}).get('yellowCardsCount', 0) }}</span
-            ><br />
-            Red Card:
-            <span data-red
-              >{{ 'Yes' if cards_data.get(player_data.player.id,
-              {}).get(match.id, {}).get('redCard', False) else 'No' }}</span
-            >
+            <!-- Was Fouled -->
+            <div class="data-container">
+              Was Fouled:
+              <span data-was-fouled>
+                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('wasFouled', 'No data') }}
+              </span>
+            </div>
+
+            <!-- Fouls -->
+            <div class="data-container">
+              Fouls:
+              <span data-fouls>
+                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('fouls', 'No data') }}
+              </span>
+            </div>
+
+            <!-- Shots Off Target -->
+            <div class="data-container">
+              Shots Off Target:
+              <span data-shots-off>
+                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('shotOffTarget', 'No data') }}
+              </span>
+            </div>
+
+            <!-- Shots On Target -->
+            <div class="data-container">
+              Shots On Target:
+              <span data-shots-on>
+                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('shotOnTarget', 'No data') }}
+              </span>
+            </div>
+
+            <!-- Yellow Cards -->
+            <div class="data-container">
+              Yellow Cards:
+              <span data-yellow>
+                {{ cards_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('yellowCardsCount', 0) }}
+              </span>
+            </div>
+
+            <!-- Red Card -->
+            <div class="data-container">
+              Red Card:
+              <span data-red>
+                {{ 'Yes' if cards_data.get(player_data.player.id,
+                {}).get(match.id, {}).get('redCard', False) else 'No' }}
+              </span>
+            </div>
           </td>
 
           {% endfor %}
@@ -164,12 +187,13 @@
 
       dataElements.forEach((element) => {
         let value = parseInt(element.textContent);
+        let container = element.closest(".data-container"); // get the parent container
         if (value === 1) {
-          element.classList.add("highlight-green");
+          container.classList.add("highlight-green");
         } else if (value === 2) {
-          element.classList.add("highlight-dark-green");
+          container.classList.add("highlight-dark-green");
         } else if (value > 2) {
-          element.classList.add("highlight-very-dark-green");
+          container.classList.add("highlight-very-dark-green");
         }
       });
     }
