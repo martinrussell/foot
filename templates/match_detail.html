@@ -43,7 +43,15 @@
     <table>
       <tr>
         <th>Teams</th>
-        <td>{{ match.homeTeam.name }} vs {{ match.awayTeam.name }}</td>
+        <td>
+          <a href="{{ url_for('team_detail', team_id=match.homeTeam.id) }}"
+            >{{ match.homeTeam.name }}</a
+          >
+          vs
+          <a href="{{ url_for('team_detail', team_id=match.awayTeam.id) }}"
+            >{{ match.awayTeam.name }}</a
+          >
+        </td>
       </tr>
       <tr>
         <th>Score</th>
@@ -85,6 +93,46 @@
     <br />
     <a href="{{ url_for('fixtures') }}">Back to Fixtures</a>
 
+    <table>
+      <thead>
+        <tr>
+          <th>Home Team Last 10 Matches</th>
+          <th>Result</th>
+          <th>Away Team Last 10 Matches</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for home_match, away_match in zip(home_last_10, away_last_10) %}
+        <tr>
+          <td>
+            {{ home_match.homeTeam.name }} vs {{ home_match.awayTeam.name }}: {{
+            home_match.homeScore.current }} - {{ home_match.awayScore.current }}
+          </td>
+          <td
+            style="background-color: 
+                        {% if home_match['result'] == 'win' %}green
+                        {% elif home_match['result'] == 'loss' %}red
+                        {% else %}yellow{% endif %};"
+          >
+            {{ home_match['result'] }}
+          </td>
+          <td>
+            {{ away_match.homeTeam.name }} vs {{ away_match.awayTeam.name }}: {{
+            away_match.homeScore.current }} - {{ away_match.awayScore.current }}
+          </td>
+          <td
+            style="background-color: 
+                        {% if away_match['result'] == 'win' %}green
+                        {% elif away_match['result'] == 'loss' %}red
+                        {% else %}yellow{% endif %};"
+          >
+            {{ away_match['result'] }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
     <h2>Team Lineups</h2>
     <div class="lineups-container">
       <!-- Home Team Lineup -->
@@ -111,12 +159,12 @@
               <td>{{ player.jerseyNumber }}</td>
               <td>{{ player.player.name }}</td>
               <td>
-                {{ player.statistics.rating if player.statistics.rating else '-'
-                }}
+                {% if 'statistics' in player and 'rating' in player.statistics
+                %} {{ player.statistics.rating }} {% else %} - {% endif %}
               </td>
               <td>
-                {{ player.statistics.fouls if player.statistics.fouls else '-'
-                }}
+                {% if 'statistics' in player and 'fouls' in player.statistics %}
+                {{ player.statistics.fouls }} {% else %} - {% endif %}
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
@@ -166,12 +214,12 @@
               <td>{{ player.jerseyNumber }}</td>
               <td>{{ player.player.name }}</td>
               <td>
-                {{ player.statistics.rating if player.statistics.rating else '-'
-                }}
+                {% if 'statistics' in player and 'rating' in player.statistics
+                %} {{ player.statistics.rating }} {% else %} - {% endif %}
               </td>
               <td>
-                {{ player.statistics.fouls if player.statistics.fouls else '-'
-                }}
+                {% if 'statistics' in player and 'fouls' in player.statistics %}
+                {{ player.statistics.fouls }} {% else %} - {% endif %}
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
@@ -225,12 +273,12 @@
               <td>{{ player.jerseyNumber }}</td>
               <td>{{ player.player.name }}</td>
               <td>
-                {{ player.statistics.rating if player.statistics.rating else '-'
-                }}
+                {% if 'statistics' in player and 'rating' in player.statistics
+                %} {{ player.statistics.rating }} {% else %} - {% endif %}
               </td>
               <td>
-                {{ player.statistics.fouls if player.statistics.fouls else '-'
-                }}
+                {% if 'statistics' in player and 'fouls' in player.statistics %}
+                {{ player.statistics.fouls }} {% else %} - {% endif %}
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
@@ -281,12 +329,12 @@
               <td>{{ player.jerseyNumber }}</td>
               <td>{{ player.player.name }}</td>
               <td>
-                {{ player.statistics.rating if player.statistics.rating else '-'
-                }}
+                {% if 'statistics' in player and 'rating' in player.statistics
+                %} {{ player.statistics.rating }} {% else %} - {% endif %}
               </td>
               <td>
-                {{ player.statistics.fouls if player.statistics.fouls else '-'
-                }}
+                {% if 'statistics' in player and 'fouls' in player.statistics %}
+                {{ player.statistics.fouls }} {% else %} - {% endif %}
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>

@@ -1,8 +1,19 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import requests
 from datetime import datetime
+from requests.exceptions import JSONDecodeError
+from flask_caching import Cache
+
 
 app = Flask(__name__)
+app.jinja_env.globals.update(zip=zip)
+
+
+# Configuring cache
+app.config[
+    "CACHE_TYPE"
+] = "simple"  # In-memory cache for development. For production, consider using "redis" or "memcached".
+cache = Cache(app)
 
 HEADERS = {
     "X-RapidAPI-Key": "b42bc11359msh98e3d09a1e9557dp173da4jsn260d881d9ab9",
@@ -16,6 +27,20 @@ def datetimeformat(value, format="%H:%M:%S"):
     return datetime.fromtimestamp(value).strftime(format)
 
 
+@app.template_filter("format_timestamp")
+def format_timestamp(value, format="%d %b %Y"):
+    return datetime.utcfromtimestamp(value).strftime(format)
+
+
+@app.template_filter("formatdate")
+def format_date(value, format="%d %b %Y"):
+    date_obj = datetime.utcfromtimestamp(value)
+    return date_obj.strftime(format)
+
+
+app.jinja_env.filters["formatdate"] = format_date
+
+
 @app.route("/")
 def fixtures():
     today = datetime.now().strftime("%d/%m/%Y")
@@ -27,6 +52,36 @@ def fixtures():
     events = data.get("events", [])
 
     return render_template("fixtures.html", events=events)
+
+
+def fetch_last_10_matches(team_id, current_match_id):
+    url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/previous/0"
+    response = requests.get(url, headers=HEADERS)
+    matches = response.json().get("events", [])
+
+    # Filter out the current match
+    filtered_matches = [match for match in matches if match["id"] != current_match_id]
+
+    # Add results to the matches
+    for match in filtered_matches:
+        # Check if winnerCode is present in match
+        if "winnerCode" in match:
+            if match["winnerCode"] == 1:
+                match["result"] = (
+                    "win" if match["homeTeam"]["id"] == team_id else "loss"
+                )
+            elif match["winnerCode"] == 2:
+                match["result"] = (
+                    "win" if match["awayTeam"]["id"] == team_id else "loss"
+                )
+            else:
+                match["result"] = "draw"
+        else:
+            match[
+                "result"
+            ] = "pending"  # or any other suitable term to indicate the match hasn't been played
+
+    return filtered_matches[-10:][::-1]  # Get the last 10 matches and reverse the list
 
 
 @app.route("/match/<int:match_id>")
@@ -44,7 +99,18 @@ def match_detail(match_id):
     # Fetch substitution incidents for the match
     incidents_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
     incidents_response = requests.get(incidents_url, headers=HEADERS)
-    incidents = incidents_response.json().get("incidents", [])
+
+    try:
+        incidents = incidents_response.json().get("incidents", [])
+    except ValueError:  # Catches JSONDecodeErrors
+        print(
+            f"Error decoding JSON for match {match_id}. Response content: {incidents_response.content}"
+        )
+        incidents = []
+
+    # Fetch last 10 matches for home and away teams
+    home_last_10 = fetch_last_10_matches(match["homeTeam"]["id"], match_id)
+    away_last_10 = fetch_last_10_matches(match["awayTeam"]["id"], match_id)
 
     # Process substitution incidents
     subbed_in = {}
@@ -91,7 +157,109 @@ def match_detail(match_id):
         goal_scorers=goal_scorers,
         subbed_in=subbed_in,
         subbed_out=subbed_out,
-        assists=assists,  # Add the assists dictionary to the template
+        assists=assists,  # Pass the assists dictionary to the template
+        home_last_10=home_last_10,  # Pass the home team's last 10 matches to the template
+        away_last_10=away_last_10,  # Pass the away team's last 10 matches to the template
+    )
+
+
+@app.route("/team/<int:team_id>")
+def team_detail(team_id):
+    # Fetch team details
+    team_url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}"
+    team_response = requests.get(team_url, headers=HEADERS)
+    team = team_response.json().get("team", {})
+
+    # Fetch players for the team
+    players_url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/players"
+    players_response = requests.get(players_url, headers=HEADERS)
+    players = players_response.json().get("players", [])
+
+    # Fetch the last 5 matches for the team
+    matches_url = (
+        f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/previous/0"
+    )
+    matches_response = requests.get(matches_url, headers=HEADERS)
+    all_matches = matches_response.json().get("events", [])
+    last_5_matches = all_matches[::-1][:5]
+
+    fouls_data = {}
+    cards_data = {}
+
+    for player_data in players:
+        player_id = player_data["player"]["id"]
+
+        # Initialize data structures for fouls and cards for this player
+        fouls_data[player_id] = {}
+        cards_data[player_id] = {}
+
+        for match in last_5_matches:
+            match_id = match["id"]
+
+            # API request to get statistics for player in the match
+            statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/player/{player_id}/statistics"
+            statistics_response = requests.get(statistics_url, headers=HEADERS)
+
+            # Check if response status code is OK (200) and handle JSON decode error
+            if statistics_response.status_code == 200:
+                try:
+                    statistics = statistics_response.json().get("statistics", {})
+                    # Store the fouls data in the nested dictionary
+                    fouls_data[player_id][match_id] = {
+                        "wasFouled": statistics.get("wasFouled", 0),
+                        "fouls": statistics.get("fouls", 0),
+                        "shotOffTarget": statistics.get("shotOffTarget", 0),
+                        "shotOnTarget": statistics.get("onTargetScoringAttempt", 0),
+                    }
+                except JSONDecodeError:
+                    print(
+                        f"Failed to decode JSON for match {match_id} and player {player_id}"
+                    )
+                    fouls_data[player_id][match_id] = {
+                        "wasFouled": "no data",
+                        "fouls": "no data",
+                        "shotOffTarget": "no data",
+                        "shotOnTarget": "no data",
+                    }
+
+            cards_data[player_id][match_id] = {"yellowCardsCount": 0, "redCard": False}
+
+            # API request to get incidents for the match
+            incidents_url = (
+                f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
+            )
+            incidents_response = requests.get(incidents_url, headers=HEADERS)
+
+            if incidents_response.status_code == 200:
+                incidents = incidents_response.json().get("incidents", [])
+
+                yellow_cards_count = sum(
+                    1
+                    for incident in incidents
+                    if incident.get("incidentClass") in ["yellow", "yellowRed"]
+                    and incident.get("player", {}).get("id") == player_id
+                )
+
+                red_card = any(
+                    incident
+                    for incident in incidents
+                    if incident.get("incidentClass") in ["red", "yellowRed"]
+                    and incident.get("player", {}).get("id") == player_id
+                )
+
+                cards_data[player_id][match_id] = {
+                    "yellowCardsCount": yellow_cards_count,
+                    "redCard": red_card,
+                }
+
+        # Pass fouls_data and cards_data to your template
+    return render_template(
+        "team_detail.html",
+        team=team,
+        players=players,
+        matches=last_5_matches,
+        fouls_data=fouls_data,
+        cards_data=cards_data,
     )
 
 

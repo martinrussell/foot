@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- jQuery library -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables CSS and JS -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css"
+    />
+    <script
+      type="text/javascript"
+      charset="utf8"
+      src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"
+    ></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Details</title>
+    <style>
+      .color-box {
+        width: 25px;
+        height: 25px;
+        display: inline-block;
+        border: 1px solid #ddd;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      tbody tr:hover {
+        background-color: #f5f5f5;
+      }
+
+      .highlight-green {
+        background-color: #90ee90; /* Light Green */
+      }
+
+      .highlight-dark-green {
+        background-color: #006400; /* Dark Green */
+        color: white;
+      }
+
+      .highlight-very-dark-green {
+        background-color: #004d00; /* Very Dark Green */
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>{{ team.name }}</h1>
+    <p>Full Name: {{ team.fullName }}</p>
+    <p>Short Name: {{ team.shortName }}</p>
+    <p>Manager: {{ team.manager.name }} from {{ team.manager.country.name }}</p>
+    <p>Venue: {{ team.venue.stadium.name }} in {{ team.venue.city.name }}</p>
+    <p>
+      Colors:
+      <span
+        class="color-box"
+        style="background-color: {{ team.teamColors.primary }}"
+      ></span>
+      Primary - {{ team.teamColors.primary }},
+      <span
+        class="color-box"
+        style="background-color: {{ team.teamColors.secondary }}"
+      ></span>
+      Secondary - {{ team.teamColors.secondary }}
+    </p>
+    <p>League: {{ team.tournament.name }}</p>
+
+    <h2>Players</h2>
+    <button onclick="highlightData('[data-fouls]')">Fouls</button>
+    <button onclick="highlightData('[data-shots-off]')">
+      Shots Off Target
+    </button>
+    <button onclick="highlightData('[data-shots-on]')">Shots On Target</button>
+    <button onclick="highlightData('[data-yellow-cards]')">Yellow Cards</button>
+    <button onclick="highlightData('[data-red-cards]')">Red Card</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Player ID</th>
+          <th>Player Name</th>
+          <th>Country</th>
+          <th>Position</th>
+          <th>Preferred Foot</th>
+          {% for match in matches %}
+          <th>
+            {{ match.homeTeam.name }} vs {{ match.awayTeam.name }} ({{
+            match.startTimestamp|format_timestamp }})
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for player_data in players %}
+        <tr>
+          <td>{{ player_data.player.id }}</td>
+          <td>{{ player_data.player.name }}</td>
+          <td>{{ player_data.player.country.name }}</td>
+          <td>{{ player_data.player.position }}</td>
+          <td>{{ player_data.player.preferredFoot }}</td>
+          {% for match in matches %}
+          <td>
+            Was Fouled:
+            <span data-was-fouled
+              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
+              {}).get('wasFouled', 'No data') }}</span
+            ><br />
+            Fouls:
+            <span data-fouls
+              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
+              {}).get('fouls', 'No data') }}</span
+            ><br />
+            Shots Off Target:
+            <span data-shots-off
+              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
+              {}).get('shotOffTarget', 'No data') }}</span
+            ><br />
+            Shots On Target:
+            <span data-shots-on
+              >{{ fouls_data.get(player_data.player.id, {}).get(match.id,
+              {}).get('shotOnTarget', 'No data') }}</span
+            ><br />
+            Yellow Cards:
+            <span data-yellow
+              >{{ cards_data.get(player_data.player.id, {}).get(match.id,
+              {}).get('yellowCardsCount', 0) }}</span
+            ><br />
+            Red Card:
+            <span data-red
+              >{{ 'Yes' if cards_data.get(player_data.player.id,
+              {}).get(match.id, {}).get('redCard', False) else 'No' }}</span
+            >
+          </td>
+
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+
+  <script>
+    function highlightData(selector) {
+      clearHighlights();
+      let dataElements = document.querySelectorAll(selector);
+
+      dataElements.forEach((element) => {
+        let value = parseInt(element.textContent);
+        if (value === 1) {
+          element.classList.add("highlight-green");
+        } else if (value === 2) {
+          element.classList.add("highlight-dark-green");
+        } else if (value > 2) {
+          element.classList.add("highlight-very-dark-green");
+        }
+      });
+    }
+
+    function clearHighlights() {
+      let highlighted = document.querySelectorAll(
+        ".highlight-green, .highlight-dark-green, .highlight-very-dark-green"
+      );
+      highlighted.forEach((el) => {
+        el.classList.remove(
+          "highlight-green",
+          "highlight-dark-green",
+          "highlight-very-dark-green"
+        );
+      });
+    }
+  </script>
+</html>
