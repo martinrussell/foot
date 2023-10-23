@@ -22,6 +22,20 @@ HEADERS = {
 }
 
 
+def fetchPlayerImage(playerId):
+    headers = {
+        "X-RapidAPI-Key": "b42bc11359msh98e3d09a1e9557dp173da4jsn260d881d9ab9",
+        "X-RapidAPI-Host": "footapi7.p.rapidapi.com",
+    }
+    url = f"https://footapi7.p.rapidapi.com/api/player/{playerId}/image"
+    try:
+        response = requests.get(url, headers=headers)
+        return response.json()
+    except Exception as e:
+        print(e)
+        return None
+
+
 @app.template_filter("datetimeformat")
 def datetimeformat(value, format="%H:%M:%S"):
     """Convert a Unix timestamp to a formatted date-time string"""
@@ -273,19 +287,15 @@ def team_detail(team_id):
 
         # Pass fouls_data, cards_data, and avg_minutes_played to your template
 
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print(f"Execution time: {elapsed_time:.2f} seconds")
-
-        return render_template(
-            "team_detail.html",
-            team=team,
-            players=players,
-            matches=last_5_matches,
-            fouls_data=fouls_data,
-            cards_data=cards_data,
-            avg_minutes_played=avg_minutes_played,
-        )
+    return render_template(
+        "team_detail.html",
+        team=team,
+        players=players,
+        matches=last_5_matches,
+        fouls_data=fouls_data,
+        cards_data=cards_data,
+        avg_minutes_played=avg_minutes_played,
+    )
 
 
 if __name__ == "__main__":
