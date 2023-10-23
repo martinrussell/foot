@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+      crossorigin="anonymous"
+    ></script>
     <!-- jQuery library -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -63,39 +74,106 @@
   </head>
 
   <body>
-    <h1>{{ team.name }}</h1>
-    <p>Full Name: {{ team.fullName }}</p>
-    <p>Short Name: {{ team.shortName }}</p>
-    <p>Manager: {{ team.manager.name }} from {{ team.manager.country.name }}</p>
-    <p>Venue: {{ team.venue.stadium.name }} in {{ team.venue.city.name }}</p>
-    <p>
-      Colors:
-      <span
-        class="color-box"
-        style="background-color: {{ team.teamColors.primary }}"
-      ></span>
-      Primary - {{ team.teamColors.primary }},
-      <span
-        class="color-box"
-        style="background-color: {{ team.teamColors.secondary }}"
-      ></span>
-      Secondary - {{ team.teamColors.secondary }}
-    </p>
-    <p>League: {{ team.tournament.name }}</p>
+    <div class="container mt-5">
+      <div class="row d-flex justify-content-center align-items-center">
+        <div class="col-lg-6">
+          <div class="card text-center">
+            <div class="card-header">
+              <h2>{{ team.name }}</h2>
+            </div>
+            <div class="card-body">
+              <p class="card-text">Full Name: {{ team.fullName }}</p>
+              <p class="card-text">Short Name: {{ team.shortName }}</p>
+              <p class="card-text">
+                Manager: {{ team.manager.name }} from {{
+                team.manager.country.name }}
+              </p>
+              <p class="card-text">
+                Venue: {{ team.venue.stadium.name }} in {{ team.venue.city.name
+                }}
+              </p>
+              <p class="card-text">
+                Colors:
+                <span
+                  class="badge"
+                  style="background-color: {{ team.teamColors.primary }}"
+                  >Primary - {{ team.teamColors.primary }}</span
+                >
+                <span
+                  class="badge"
+                  style="background-color: {{ team.teamColors.secondary }}"
+                  >Secondary - {{ team.teamColors.secondary }}</span
+                >
+              </p>
+              <p class="card-text">League: {{ team.tournament.name }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <h2>Players</h2>
-    <button onclick="highlightData('[data-fouls]')">Fouls</button>
-    <button onclick="highlightData('[data-shots-off]')">
-      Shots Off Target
-    </button>
-    <button onclick="highlightData('[data-shots-on]')">Shots On Target</button>
-    <button onclick="highlightData('[data-yellow-cards]')">Yellow Cards</button>
-    <button onclick="highlightData('[data-red-cards]')">Red Card</button>
+    <div class="container mt-3">
+      <div class="text-center mb-4">
+        <h2>Players</h2>
+        <div class="btn-group mt-2" role="group">
+          <button
+            onclick="highlightData('[data-fouls]')"
+            class="btn btn-outline-primary"
+          >
+            Fouls
+          </button>
+          <button
+            onclick="highlightData('[data-shots-off]')"
+            class="btn btn-outline-primary"
+          >
+            Shots Off Target
+          </button>
+          <button
+            onclick="highlightData('[data-shots-on]')"
+            class="btn btn-outline-primary"
+          >
+            Shots On Target
+          </button>
+          <button
+            onclick="highlightData('[data-yellow]')"
+            class="btn btn-outline-warning"
+          >
+            Yellow Cards
+          </button>
+          <button
+            onclick="highlightData('[data-red]')"
+            class="btn btn-outline-danger"
+          >
+            Red Card
+          </button>
+        </div>
+      </div>
 
-    <table>
+      <div class="mb-3 d-flex justify-content-start">
+        <label for="positionFilter" class="me-2">Filter by Position:</label>
+        <select
+          id="positionFilter"
+          class="form-select form-select-sm"
+          style="width: auto"
+        >
+          <option value="">All</option>
+          <option value="G">Goalkeeper</option>
+          <option value="D">Defender</option>
+          <option value="M">Midfielder</option>
+          <option value="F">Forward</option>
+          <!-- ... other positions ... -->
+        </select>
+      </div>
+    </div>
+
+    <table
+      id="myTable"
+      class="table table-bordered table-striped table-hover small"
+    >
       <thead>
         <tr>
           <th>Player ID</th>
+          <th>Avg Minutes</th>
           <th>Player Name</th>
           <th>Country</th>
           <th>Position</th>
@@ -104,6 +182,10 @@
           <th>
             {{ match.homeTeam.name }} vs {{ match.awayTeam.name }} ({{
             match.startTimestamp|format_timestamp }})
+            <br />
+            {{ match.tournament.name}}
+            <br />
+            {{ match.id}}
           </th>
           {% endfor %}
         </tr>
@@ -112,6 +194,9 @@
         {% for player_data in players %}
         <tr>
           <td>{{ player_data.player.id }}</td>
+          <td>
+            {{ avg_minutes_played.get(player_data.player.id, 0) | round(2) }}
+          </td>
           <td>{{ player_data.player.name }}</td>
           <td>{{ player_data.player.country.name }}</td>
           <td>{{ player_data.player.position }}</td>
@@ -171,6 +256,14 @@
                 {}).get(match.id, {}).get('redCard', False) else 'No' }}
               </span>
             </div>
+            <!-- Minutes Played -->
+            <div class="data-container">
+              Minutes Played:
+              <span data-minutes>
+                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
+                {}).get('minutesPlayed', 'No data') }}
+              </span>
+            </div>
           </td>
 
           {% endfor %}
@@ -210,5 +303,22 @@
         );
       });
     }
+
+    $(document).ready(function () {
+      $("#myTable").DataTable();
+    });
+
+    $("#myTable").DataTable({
+      order: [[1, "desc"]], // Assuming the minutes played is the second column (0-indexed)
+    });
+
+    $(document).ready(function () {
+      var table = $("#myTable").DataTable();
+
+      // Assuming you have a <select id="positionFilter"> element with position options
+      $("#positionFilter").on("change", function () {
+        table.column(4).search(this.value).draw(); // Assuming position is the fifth column
+      });
+    });
   </script>
 </html>

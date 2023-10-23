@@ -185,6 +185,7 @@ def team_detail(team_id):
 
     fouls_data = {}
     cards_data = {}
+    avg_minutes_played = {}
 
     for player_data in players:
         player_id = player_data["player"]["id"]
@@ -192,6 +193,9 @@ def team_detail(team_id):
         # Initialize data structures for fouls and cards for this player
         fouls_data[player_id] = {}
         cards_data[player_id] = {}
+
+        total_minutes = 0
+        match_count = 0
 
         for match in last_5_matches:
             match_id = match["id"]
@@ -210,7 +214,15 @@ def team_detail(team_id):
                         "fouls": statistics.get("fouls", 0),
                         "shotOffTarget": statistics.get("shotOffTarget", 0),
                         "shotOnTarget": statistics.get("onTargetScoringAttempt", 0),
+                        "minutesPlayed": statistics.get("minutesPlayed", 0),
                     }
+
+                    # Update total_minutes and match_count for average calculation
+                    minutes = fouls_data[player_id][match_id].get("minutesPlayed", 0)
+                    if isinstance(minutes, (int, float)):
+                        total_minutes += minutes
+                        match_count += 1
+
                 except JSONDecodeError:
                     print(
                         f"Failed to decode JSON for match {match_id} and player {player_id}"
@@ -220,6 +232,7 @@ def team_detail(team_id):
                         "fouls": "no data",
                         "shotOffTarget": "no data",
                         "shotOnTarget": "no data",
+                        "minutesPlayed": "no data",
                     }
 
             cards_data[player_id][match_id] = {"yellowCardsCount": 0, "redCard": False}
@@ -252,7 +265,11 @@ def team_detail(team_id):
                     "redCard": red_card,
                 }
 
-        # Pass fouls_data and cards_data to your template
+        # Calculate the average and store it outside the inner match loop
+        avg_minutes = total_minutes / match_count if match_count > 0 else 0
+        avg_minutes_played[player_id] = avg_minutes
+
+        # Pass fouls_data, cards_data, and avg_minutes_played to your template
     return render_template(
         "team_detail.html",
         team=team,
@@ -260,6 +277,7 @@ def team_detail(team_id):
         matches=last_5_matches,
         fouls_data=fouls_data,
         cards_data=cards_data,
+        avg_minutes_played=avg_minutes_played,
     )
 
 
