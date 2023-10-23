@@ -66,13 +66,20 @@
       <tr>
         <th>Venue</th>
         <td>
-          {{ match.venue.stadium.name }}, {{ match.venue.city.name }}, {{
-          match.venue.country.name }}
+          {% if 'venue' in match and 'stadium' in match.venue and 'name' in
+          match.venue.stadium %} {{ match.venue.stadium.name }}, {% endif %} {%
+          if 'venue' in match and 'city' in match.venue and 'name' in
+          match.venue.city %} {{ match.venue.city.name }}, {% endif %} {% if
+          'venue' in match and 'country' in match.venue and 'name' in
+          match.venue.country %} {{ match.venue.country.name }} {% endif %}
         </td>
       </tr>
       <tr>
         <th>Referee</th>
-        <td>{{ match.referee.name }}</td>
+        <td>
+          {% if 'referee' in match and 'name' in match.referee %} {{
+          match.referee.name }} {% else %} Not Available {% endif %}
+        </td>
       </tr>
     </table>
     <br />
@@ -93,6 +100,9 @@
               <th>Fouls</th>
               <th>Position</th>
               <th>Country</th>
+              <th>Substitution</th>
+              <th>Goals</th>
+              <th>Assists</th>
             </tr>
           </thead>
           <tbody>
@@ -110,6 +120,26 @@
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
+              <!-- Check for substitution status and display it -->
+              <!-- Check for substitutions -->
+              <td>
+                {% if player.player.id in subbed_out %} Out ({{
+                subbed_out[player.player.id]['time'] }}') for {{
+                subbed_out[player.player.id]['name'] }} {% elif player.player.id
+                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
+                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
+                endif %}
+              </td>
+              <td>
+                {% if player.player.id in goal_scorers %} {% for time in
+                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
+                else %} - {% endif %}
+              </td>
+              <td>
+                {% if player.player.id in assists %} 🎯 {{
+                assists[player.player.id]|join(", ") }}' {% else %} - {% endif
+                %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -125,6 +155,9 @@
               <th>Fouls</th>
               <th>Position</th>
               <th>Country</th>
+              <th>Substitution</th>
+              <th>Goals</th>
+              <th>Assists</th>
             </tr>
           </thead>
           <tbody>
@@ -142,6 +175,26 @@
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
+              <!-- Check for substitution status and display it -->
+              <!-- Check for substitutions -->
+              <td>
+                {% if player.player.id in subbed_out %} Out ({{
+                subbed_out[player.player.id]['time'] }}') for {{
+                subbed_out[player.player.id]['name'] }} {% elif player.player.id
+                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
+                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
+                endif %}
+              </td>
+              <td>
+                {% if player.player.id in goal_scorers %} {% for time in
+                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
+                else %} - {% endif %}
+              </td>
+              <td>
+                {% if player.player.id in assists %} 🎯 {{
+                assists[player.player.id]|join(", ") }}' {% else %} - {% endif
+                %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -161,6 +214,9 @@
               <th>Fouls</th>
               <th>Position</th>
               <th>Country</th>
+              <th>Substitution</th>
+              <th>Goals</th>
+              <th>Assists</th>
             </tr>
           </thead>
           <tbody>
@@ -178,7 +234,28 @@
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
+              <!-- Check for substitution status and display it -->
+              <!-- Check for substitutions -->
+              <td>
+                {% if player.player.id in subbed_out %} Out ({{
+                subbed_out[player.player.id]['time'] }}') for {{
+                subbed_out[player.player.id]['name'] }} {% elif player.player.id
+                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
+                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
+                endif %}
+              </td>
+              <td>
+                {% if player.player.id in goal_scorers %} {% for time in
+                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
+                else %} - {% endif %}
+              </td>
+              <td>
+                {% if player.player.id in assists %} 🎯 {{
+                assists[player.player.id]|join(", ") }}' {% else %} - {% endif
+                %}
+              </td>
             </tr>
+
             {% endfor %}
           </tbody>
         </table>
@@ -193,6 +270,9 @@
               <th>Fouls</th>
               <th>Position</th>
               <th>Country</th>
+              <th>Substitution</th>
+              <th>Goals</th>
+              <th>Assists</th>
             </tr>
           </thead>
           <tbody>
@@ -210,7 +290,28 @@
               </td>
               <td>{{ player.position }}</td>
               <td>{{ player.player.country.name }}</td>
+              <!-- Check for substitutions -->
+              <!-- Check for substitutions -->
+              <td>
+                {% if player.player.id in subbed_out %} Out ({{
+                subbed_out[player.player.id]['time'] }}') for {{
+                subbed_out[player.player.id]['name'] }} {% elif player.player.id
+                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
+                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
+                endif %}
+              </td>
+              <td>
+                {% if player.player.id in goal_scorers %} {% for time in
+                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
+                else %} - {% endif %}
+              </td>
+              <td>
+                {% if player.player.id in assists %} 🎯 {{
+                assists[player.player.id]|join(", ") }}' {% else %} - {% endif
+                %}
+              </td>
             </tr>
+
             {% endfor %}
           </tbody>
         </table>
