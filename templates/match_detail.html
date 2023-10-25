@@ -4,76 +4,198 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Match Details</title>
-    <style>
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-      }
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
 
-      table,
-      th,
-      td {
-        border: 1px solid black;
-      }
+  <style>
+    /* Google Fonts Import */
+    @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&family=Roboto+Slab:wght@300;700&display=swap");
 
-      th,
-      td {
-        padding: 10px;
-        text-align: left;
-      }
+    /* Reset Margin and Padding */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      th {
-        background-color: #f2f2f2;
-      }
+    body {
+      font-family: "Montserrat", sans-serif;
+      font-size: 14px; /* Smaller font size */
+      color: #333;
+      background-color: #f4f4f4;
+      line-height: 1.4;
+      padding: 20px;
+    }
 
+    .container {
+      max-width: 1200px; /* Adjusted for better alignment */
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: "Roboto Slab", serif;
+      color: #444;
+    }
+
+    h1 {
+      font-size: 24px; /* Smaller */
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 20px; /* Smaller */
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px; /* Smaller */
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    table th,
+    table td {
+      padding: 8px; /* Smaller padding */
+      border: 1px solid #ddd;
+      text-align: left;
+      font-size: 13px; /* Smaller font size */
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
+
+    td.win {
+      color: #4caf50;
+    }
+
+    td.loss {
+      color: #f44336;
+    }
+
+    td.draw {
+      color: #ffc107;
+    }
+
+    /* Team Lineup Styles */
+    .lineups-container {
+      display: flex;
+      justify-content: space-between; /* Lineups side by side */
+      flex-wrap: wrap; /* Responsive wrapping */
+      gap: 20px; /* Spacing between lineups */
+    }
+
+    .lineup {
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 10px; /* Smaller padding */
+      flex-basis: calc(50% - 20px); /* Each lineup takes half width minus gap */
+    }
+
+    .lineup h3 {
+      padding-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+
+    .player {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px; /* Smaller font size */
+    }
+
+    /* Responsive Design */
+    @media only screen and (max-width: 768px) {
       .lineups-container {
-        display: flex;
-        justify-content: space-between;
+        flex-direction: column;
       }
 
       .lineup {
-        width: 48%; /* Split the width to show side by side, accounting for some margin */
+        flex-basis: 100%; /* Full width for mobile */
       }
-    </style>
-  </head>
 
-  <body>
-    <h1>Match Details</h1>
-    <table>
+      .player {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+
+    /* Link Styles */
+    a {
+      color: #333;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #007bff;
+    }
+
+    /* Footer Style */
+    footer {
+      text-align: center;
+      padding: 20px;
+      margin-top: 20px;
+      font-size: 0.8rem;
+      background-color: #333;
+      color: white;
+    }
+  </style>
+
+  <body class="bg-gray-100 font-sans text-gray-800">
+  <div class="max-w-6xl mx-auto p-6">
+  <table class="min-w-full divide-y divide-gray-200">
+  <thead class="bg-gray-800 text-white">
+    <table class="match-details">
       <tr>
-        <th>Teams</th>
-        <td>
-          <a href="{{ url_for('team_detail', team_id=match.homeTeam.id) }}"
-            >{{ match.homeTeam.name }}</a
+        <th colspan="2" class="match-header">{{ match.tournament.name }}</th>
+      </tr>
+      <tr>
+        <td colspan="2" style="text-align: center">
+          <a
+            href="{{ url_for('team_detail', team_id=match.homeTeam.id) }}"
+            class="team-link"
           >
-          vs
-          <a href="{{ url_for('team_detail', team_id=match.awayTeam.id) }}"
-            >{{ match.awayTeam.name }}</a
+            {{ match.homeTeam.name }}
+          </a>
+          <span class="score"
+            >{{ match.homeScore.display }} - {{ match.awayScore.display }}</span
           >
+          <a
+            href="{{ url_for('team_detail', team_id=match.awayTeam.id) }}"
+            class="team-link"
+          >
+            {{ match.awayTeam.name }}
+          </a>
         </td>
       </tr>
       <tr>
-        <th>Score</th>
-        <td>{{ match.homeScore.display }} - {{ match.awayScore.display }}</td>
-      </tr>
-      <tr>
         <th>Status</th>
-        <td>{{ match.status.description }}</td>
+        <td class="info">{{ match.status.description }}</td>
       </tr>
       <tr>
         <th>Start Time</th>
-        <td>
+        <td class="info">
           {{ (match.startTimestamp|float)|datetimeformat('%d/%m/%Y %H:%M') }}
         </td>
       </tr>
       <tr>
-        <th>Tournament</th>
-        <td>{{ match.tournament.name }}</td>
-      </tr>
-      <tr>
         <th>Venue</th>
-        <td>
+        <td class="info">
           {% if 'venue' in match and 'stadium' in match.venue and 'name' in
           match.venue.stadium %} {{ match.venue.stadium.name }}, {% endif %} {%
           if 'venue' in match and 'city' in match.venue and 'name' in
@@ -84,16 +206,14 @@
       </tr>
       <tr>
         <th>Referee</th>
-        <td>
+        <td class="info">
           {% if 'referee' in match and 'name' in match.referee %} {{
           match.referee.name }} {% else %} Not Available {% endif %}
         </td>
       </tr>
     </table>
-    <br />
-    <a href="{{ url_for('fixtures') }}">Back to Fixtures</a>
 
-    <table>
+    <table class="last-matches">
       <thead>
         <tr>
           <th>Home Team Last 10 Matches</th>
@@ -106,28 +226,20 @@
         {% for home_match, away_match in zip(home_last_10, away_last_10) %}
         <tr>
           <td>
-            {{ home_match.homeTeam.name }} vs {{ home_match.awayTeam.name }}: {{
-            home_match.homeScore.current }} - {{ home_match.awayScore.current }}
+            {{ home_match.homeTeam.name }} vs {{ home_match.awayTeam.name }}
           </td>
           <td
-            style="background-color: 
-                        {% if home_match['result'] == 'win' %}green
-                        {% elif home_match['result'] == 'loss' %}red
-                        {% else %}yellow{% endif %};"
+            class="result {% if home_match['result'] == 'win' %}win {% elif home_match['result'] == 'loss' %}loss {% else %}draw{% endif %}"
           >
-            {{ home_match['result'] }}
+            {{ home_match['result'].title() }}
           </td>
           <td>
-            {{ away_match.homeTeam.name }} vs {{ away_match.awayTeam.name }}: {{
-            away_match.homeScore.current }} - {{ away_match.awayScore.current }}
+            {{ away_match.homeTeam.name }} vs {{ away_match.awayTeam.name }}
           </td>
           <td
-            style="background-color: 
-                        {% if away_match['result'] == 'win' %}green
-                        {% elif away_match['result'] == 'loss' %}red
-                        {% else %}yellow{% endif %};"
+            class="result {% if away_match['result'] == 'win' %}win {% elif away_match['result'] == 'loss' %}loss {% else %}draw{% endif %}"
           >
-            {{ away_match['result'] }}
+            {{ away_match['result'].title() }}
           </td>
         </tr>
         {% endfor %}
@@ -142,49 +254,60 @@
         <table>
           <thead>
             <tr>
-              <th>Jersey Number</th>
-              <th>Player Name</th>
-              <th>Rating</th>
-              <th>Fouls</th>
-              <th>Position</th>
-              <th>Country</th>
-              <th>Substitution</th>
-              <th>Goals</th>
-              <th>Assists</th>
+              <th>Player</th>
+              <th>Details</th>
+              <th>Performance</th>
             </tr>
           </thead>
           <tbody>
             {% for player in lineups.home.players if not player.substitute %}
             <tr>
-              <td>{{ player.jerseyNumber }}</td>
-              <td>{{ player.player.name }}</td>
+            <td>
+                 <img src="{{ url_for('static', filename='images/' + player.player.id ~ '_image.png') }}" alt="Player Image" style="max-width: 50px; max-height: 50px; float: left; margin-right: 10px;">
+    #{{ player.jerseyNumber }} {{ player.player.name }}
+  <!-- Check for card and display color -->
+  {% if player.player.id in cards %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Yellow" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: #f1c40f; margin-right: 5px;"></div> <!-- Muted Yellow Square -->
+      {% endif %}
+    {% endfor %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Red" or card.type == "YellowRed" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: red; margin-right: 5px;"></div> <!-- Red Square -->
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+   <!-- Include substitution logic here for starting players -->
+{% if player.player.id in subbed_out %}
+  <br>
+  <span style="font-size: smaller;">
+    🔄 for <strong>{{ subbed_out[player.player.id].in_player_name }}</strong> {{ subbed_out[player.player.id].time }}'
+  </span>
+{% endif %}
+
+
+
+  <br />
+  <small>{{ player.position }}, {{ player.player.country.name }}</small>
+</td>
+
+
               <td>
-                {% if 'statistics' in player and 'rating' in player.statistics
-                %} {{ player.statistics.rating }} {% else %} - {% endif %}
+                Rating: {% if 'statistics' in player and 'rating' in
+                player.statistics %}  
+                
+                {{ player.statistics.rating }} {% else %} -
+                {% endif %}<br />
+                Fouls: {% if 'statistics' in player and 'fouls' in
+                player.statistics %} {{ player.statistics.fouls }} {% else %} -
+                {% endif %}
               </td>
               <td>
-                {% if 'statistics' in player and 'fouls' in player.statistics %}
-                {{ player.statistics.fouls }} {% else %} - {% endif %}
-              </td>
-              <td>{{ player.position }}</td>
-              <td>{{ player.player.country.name }}</td>
-              <!-- Check for substitution status and display it -->
-              <!-- Check for substitutions -->
-              <td>
-                {% if player.player.id in subbed_out %} Out ({{
-                subbed_out[player.player.id]['time'] }}') for {{
-                subbed_out[player.player.id]['name'] }} {% elif player.player.id
-                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
-                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
-                endif %}
-              </td>
-              <td>
-                {% if player.player.id in goal_scorers %} {% for time in
-                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
-                else %} - {% endif %}
-              </td>
-              <td>
-                {% if player.player.id in assists %} 🎯 {{
+                Goals: {% if player.player.id in goal_scorers %} ⚽ {% for time
+                in goal_scorers[player.player.id] %} {{ time }}' {% endfor %} {%
+                else %} - {% endif %}<br />
+                Assists: {% if player.player.id in assists %} 🎯 {{
                 assists[player.player.id]|join(", ") }}' {% else %} - {% endif
                 %}
               </td>
@@ -197,49 +320,61 @@
         <table>
           <thead>
             <tr>
-              <th>Jersey Number</th>
-              <th>Player Name</th>
-              <th>Rating</th>
-              <th>Fouls</th>
-              <th>Position</th>
-              <th>Country</th>
-              <th>Substitution</th>
-              <th>Goals</th>
-              <th>Assists</th>
+              <th>Player</th>
+              <th>Details</th>
+              <th>Performance</th>
             </tr>
           </thead>
           <tbody>
             {% for player in lineups.home.players if player.substitute %}
             <tr>
-              <td>{{ player.jerseyNumber }}</td>
-              <td>{{ player.player.name }}</td>
+          <td>
+ <img src="{{ url_for('static', filename='images/' + player.player.id ~ '_image.png') }}" alt="Player Image" style="max-width: 50px; max-height: 50px; float: left; margin-right: 10px;">
+    #{{ player.jerseyNumber }} {{ player.player.name }}
+  <!-- Check for card and display color -->
+  {% if player.player.id in cards %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Yellow" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: #f1c40f; margin-right: 5px;"></div> <!-- Muted Yellow Square -->
+      {% endif %}
+    {% endfor %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Red" or card.type == "YellowRed" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: red; margin-right: 5px;"></div> <!-- Red Square -->
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+<!-- Include substitution logic here for starting players -->
+{% if player.player.id in subbed_in %}
+  <span style="font-size: smaller;">
+    🔄 <strong>{{ subbed_in[player.player.id].in_player_name }}</strong> {{ subbed_in[player.player.id].time }}' <br>
+    for {{ subbed_in[player.player.id].out_player_name }}
+  </span>
+{% elif player.player.id in subbed_out %}
+  <span style="font-size: smaller;">
+    🔄 <strong>{{ subbed_out[player.player.id].in_player_name }}</strong> {{ subbed_out[player.player.id].time }}' <br>
+    for {{ subbed_out[player.player.id].out_player_name }}
+  </span>
+{% endif %}
+
+
+  <br />
+  <small>{{ player.position }}, {{ player.player.country.name }}</small>
+</td>
+
               <td>
-                {% if 'statistics' in player and 'rating' in player.statistics
-                %} {{ player.statistics.rating }} {% else %} - {% endif %}
+                Rating: {% if 'statistics' in player and 'rating' in
+                player.statistics %} {{ player.statistics.rating }} {% else %} -
+                {% endif %}<br />
+                Fouls: {% if 'statistics' in player and 'fouls' in
+                player.statistics %} {{ player.statistics.fouls }} {% else %} -
+                {% endif %}
               </td>
               <td>
-                {% if 'statistics' in player and 'fouls' in player.statistics %}
-                {{ player.statistics.fouls }} {% else %} - {% endif %}
-              </td>
-              <td>{{ player.position }}</td>
-              <td>{{ player.player.country.name }}</td>
-              <!-- Check for substitution status and display it -->
-              <!-- Check for substitutions -->
-              <td>
-                {% if player.player.id in subbed_out %} Out ({{
-                subbed_out[player.player.id]['time'] }}') for {{
-                subbed_out[player.player.id]['name'] }} {% elif player.player.id
-                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
-                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
-                endif %}
-              </td>
-              <td>
-                {% if player.player.id in goal_scorers %} {% for time in
-                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
-                else %} - {% endif %}
-              </td>
-              <td>
-                {% if player.player.id in assists %} 🎯 {{
+                Goals: {% if player.player.id in goal_scorers %} ⚽ {% for time
+                in goal_scorers[player.player.id] %} {{ time }}' {% endfor %} {%
+                else %} - {% endif %}<br />
+                Assists: {% if player.player.id in assists %} 🎯 {{
                 assists[player.player.id]|join(", ") }}' {% else %} - {% endif
                 %}
               </td>
@@ -252,114 +387,131 @@
       <!-- Away Team Lineup -->
       <div class="lineup">
         <h3>{{ match.awayTeam.name }} ({{ lineups.away.formation }})</h3>
+        <!-- Away Team Starting XI -->
         <h4>Starting XI</h4>
         <table>
           <thead>
             <tr>
-              <th>Jersey Number</th>
-              <th>Player Name</th>
-              <th>Rating</th>
-              <th>Fouls</th>
-              <th>Position</th>
-              <th>Country</th>
-              <th>Substitution</th>
-              <th>Goals</th>
-              <th>Assists</th>
+              <th>Player</th>
+              <th>Details</th>
+              <th>Performance</th>
             </tr>
           </thead>
           <tbody>
             {% for player in lineups.away.players if not player.substitute %}
             <tr>
-              <td>{{ player.jerseyNumber }}</td>
-              <td>{{ player.player.name }}</td>
               <td>
-                {% if 'statistics' in player and 'rating' in player.statistics
-                %} {{ player.statistics.rating }} {% else %} - {% endif %}
+ <img src="{{ url_for('static', filename='images/' + player.player.id ~ '_image.png') }}" alt="Player Image" style="max-width: 50px; max-height: 50px; float: left; margin-right: 10px;">
+    #{{ player.jerseyNumber }} {{ player.player.name }}
+  <!-- Check for card and display color -->
+  {% if player.player.id in cards %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Yellow" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: #f1c40f; margin-right: 5px;"></div> <!-- Muted Yellow Square -->
+      {% endif %}
+    {% endfor %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Red" or card.type == "YellowRed" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: red; margin-right: 5px;"></div> <!-- Red Square -->
+      {% endif %}
+     <!-- Include substitution logic here for starting players -->
+
+
+
+    {% endfor %}
+  {% endif %}
+  <br />
+  <small>{{ player.position }}, {{ player.player.country.name }}</small>
+</td>
+
+              <td>
+                Rating: {% if 'statistics' in player and 'rating' in
+                player.statistics %} {{ player.statistics.rating }} {% else %} -
+                {% endif %}<br />
+                Fouls: {% if 'statistics' in player and 'fouls' in
+                player.statistics %} {{ player.statistics.fouls }} {% else %} -
+                {% endif %}
               </td>
               <td>
-                {% if 'statistics' in player and 'fouls' in player.statistics %}
-                {{ player.statistics.fouls }} {% else %} - {% endif %}
-              </td>
-              <td>{{ player.position }}</td>
-              <td>{{ player.player.country.name }}</td>
-              <!-- Check for substitution status and display it -->
-              <!-- Check for substitutions -->
-              <td>
-                {% if player.player.id in subbed_out %} Out ({{
-                subbed_out[player.player.id]['time'] }}') for {{
-                subbed_out[player.player.id]['name'] }} {% elif player.player.id
-                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
-                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
-                endif %}
-              </td>
-              <td>
-                {% if player.player.id in goal_scorers %} {% for time in
-                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
-                else %} - {% endif %}
-              </td>
-              <td>
-                {% if player.player.id in assists %} 🎯 {{
+                Goals: {% if player.player.id in goal_scorers %}⚽ {% for time
+                in goal_scorers[player.player.id] %} {{ time }}' {% endfor %} {%
+                else %} - {% endif %}<br />
+                Assists: {% if player.player.id in assists %} 🎯 {{
                 assists[player.player.id]|join(", ") }}' {% else %} - {% endif
                 %}
               </td>
             </tr>
-
             {% endfor %}
           </tbody>
         </table>
 
+        <!-- Away Team Substitutes -->
         <h4>Substitutes</h4>
         <table>
           <thead>
             <tr>
-              <th>Jersey Number</th>
-              <th>Player Name</th>
-              <th>Rating</th>
-              <th>Fouls</th>
-              <th>Position</th>
-              <th>Country</th>
-              <th>Substitution</th>
-              <th>Goals</th>
-              <th>Assists</th>
+              <th>Player</th>
+              <th>Details</th>
+              <th>Performance</th>
             </tr>
           </thead>
           <tbody>
             {% for player in lineups.away.players if player.substitute %}
             <tr>
-              <td>{{ player.jerseyNumber }}</td>
-              <td>{{ player.player.name }}</td>
+             <td>
+ <img src="{{ url_for('static', filename='images/' + player.player.id ~ '_image.png') }}" alt="Player Image" style="max-width: 50px; max-height: 50px; float: left; margin-right: 10px;">
+    #{{ player.jerseyNumber }} {{ player.player.name }}
+  <!-- Check for card and display color -->
+  {% if player.player.id in cards %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Yellow" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: #f1c40f; margin-right: 5px;"></div> <!-- Muted Yellow Square -->
+      {% endif %}
+    {% endfor %}
+    {% for card in cards[player.player.id] %}
+      {% if card.type == "Red" or card.type == "YellowRed" %}
+        <div style="display: inline-block; width: 10px; height: 10px; background-color: red; margin-right: 5px;"></div> <!-- Red Square -->
+      {% endif %}
+    {% endfor %}
+    
+  {% endif %}
+   <!-- Display substitution info with names and emojis -->
+    <!-- Include substitution logic here for starting players -->
+<!-- Include substitution logic here for starting players -->
+{% if player.player.id in subbed_in %}
+  <span style="font-size: smaller;">
+    🔄 <strong>{{ subbed_in[player.player.id].in_player_name }}</strong> {{ subbed_in[player.player.id].time }}' <br>
+    for {{ subbed_in[player.player.id].out_player_name }}
+  </span>
+{% elif player.player.id in subbed_out %}
+  <span style="font-size: smaller;">
+    🔄 <strong>{{ subbed_out[player.player.id].in_player_name }}</strong> {{ subbed_out[player.player.id].time }}' <br>
+    for {{ subbed_out[player.player.id].out_player_name }}
+  </span>
+{% endif %}
+
+
+  <br />
+  <small>{{ player.position }}, {{ player.player.country.name }}</small>
+</td>
+
               <td>
-                {% if 'statistics' in player and 'rating' in player.statistics
-                %} {{ player.statistics.rating }} {% else %} - {% endif %}
+                Rating: {% if 'statistics' in player and 'rating' in
+                player.statistics %} {{ player.statistics.rating }} {% else %} -
+                {% endif %}<br />
+                Fouls: {% if 'statistics' in player and 'fouls' in
+                player.statistics %} {{ player.statistics.fouls }} {% else %} -
+                {% endif %}
               </td>
               <td>
-                {% if 'statistics' in player and 'fouls' in player.statistics %}
-                {{ player.statistics.fouls }} {% else %} - {% endif %}
-              </td>
-              <td>{{ player.position }}</td>
-              <td>{{ player.player.country.name }}</td>
-              <!-- Check for substitutions -->
-              <!-- Check for substitutions -->
-              <td>
-                {% if player.player.id in subbed_out %} Out ({{
-                subbed_out[player.player.id]['time'] }}') for {{
-                subbed_out[player.player.id]['name'] }} {% elif player.player.id
-                in subbed_in %} In ({{ subbed_in[player.player.id]['time'] }}')
-                for {{ subbed_in[player.player.id]['name'] }} {% else %} - {%
-                endif %}
-              </td>
-              <td>
-                {% if player.player.id in goal_scorers %} {% for time in
-                goal_scorers[player.player.id] %} ⚽ {{ time }}' {% endfor %} {%
-                else %} - {% endif %}
-              </td>
-              <td>
-                {% if player.player.id in assists %} 🎯 {{
+                Goals: {% if player.player.id in goal_scorers %} ⚽ {% for time
+                in goal_scorers[player.player.id] %} {{ time }}' {% endfor %} {%
+                else %} - {% endif %}<br />
+                Assists: {% if player.player.id in assists %} 🎯 {{
                 assists[player.player.id]|join(", ") }}' {% else %} - {% endif
                 %}
               </td>
             </tr>
-
             {% endfor %}
           </tbody>
         </table>

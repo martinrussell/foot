@@ -4,56 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Today's Football Fixtures</title>
-    <style>
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      table,
-      th,
-      td {
-        border: 1px solid black;
-      }
-      th,
-      td {
-        padding: 10px;
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-    </style>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
   </head>
+
   <body>
-    <h1>Today's Football Fixtures</h1>
-    <table>
-      <thead>
-        <tr>
-          <th>Home Team</th>
-          <th>Away Team</th>
-          <th>Score</th>
-          <th>Status</th>
-          <th>Start Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for event in events %}
-        <tr>
-          <td>{{ event.homeTeam.name }}</td>
-          <td>{{ event.awayTeam.name }}</td>
-          <td>{{ event.homeScore.display }} - {{ event.awayScore.display }}</td>
-          <td>
-            <a href="{{ url_for('match_detail', match_id=event.id) }}"
-              >{{ event.status.description }}</a
-            >
-          </td>
-          <!-- Convert Unix timestamp to readable date-time format -->
-          <td>
-            {{ (event.startTimestamp|float)|datetimeformat('%d/%m/%Y %H:%M') }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="container">
+      <h1>Today's Football Fixtures</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Home Team</th>
+            <th>Away Team</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Start Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td>{{ event.homeTeam.name }}</td>
+            <td>{{ event.awayTeam.name }}</td>
+            <td class="score">
+              {{ event.homeScore.display }} - {{ event.awayScore.display }}
+            </td>
+            <td class="status">
+              <a href="{{ url_for('match_detail', match_id=event.id) }}"
+                >{{ event.status.description }}</a
+              >
+            </td>
+            <td>
+              {{ (event.startTimestamp|float)|datetimeformat('%d/%m/%Y %H:%M')
+              }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </body>
 </html>

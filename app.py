@@ -4,7 +4,8 @@ from datetime import datetime
 from requests.exceptions import JSONDecodeError
 from flask_caching import Cache
 import time
-
+import os
+from flask import current_app
 
 app = Flask(__name__)
 app.jinja_env.globals.update(zip=zip)
@@ -23,16 +24,35 @@ HEADERS = {
 
 
 def fetchPlayerImage(playerId):
+    # Ensure the saved image file has a .png extension
+    filename = f"{playerId}_image.png"
+    save_path = os.path.join(current_app.static_folder, "images", filename)
+
+    # Check if the image file already exists
+    if os.path.exists(save_path):
+        # If it exists, return the relative path to the existing file
+        return os.path.join("images", filename)
+
+    # If the image file doesn't exist, download it
+    url = f"https://footapi7.p.rapidapi.com/api/player/{playerId}/image"
     headers = {
         "X-RapidAPI-Key": "b42bc11359msh98e3d09a1e9557dp173da4jsn260d881d9ab9",
         "X-RapidAPI-Host": "footapi7.p.rapidapi.com",
     }
-    url = f"https://footapi7.p.rapidapi.com/api/player/{playerId}/image"
+
     try:
         response = requests.get(url, headers=headers)
-        return response.json()
-    except Exception as e:
-        print(e)
+        response.raise_for_status()
+
+        # Save the image to the app's static folder
+        with open(save_path, "wb") as f:
+            f.write(response.content)
+
+        # Return the relative path to the saved image
+        return os.path.join("images", filename)
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred: {e}")
         return None
 
 
@@ -61,7 +81,7 @@ def fixtures():
     today = datetime.now().strftime("%d/%m/%Y")
     day, month, year = today.split("/")
     url = f"https://footapi7.p.rapidapi.com/api/matches/top/{day}/{month}/{year}"
-
+    url = f"https://footapi7.p.rapidapi.com/api/matches/top/23/10/2023"
     response = requests.get(url, headers=HEADERS)
     data = response.json()
     events = data.get("events", [])
@@ -110,6 +130,16 @@ def match_detail(match_id):
     lineup_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/lineups"
     lineup_response = requests.get(lineup_url, headers=HEADERS)
     lineups = lineup_response.json()
+    print(lineups)
+    # Fetch and save player images for home players
+    for player in lineups["home"]["players"]:
+        player_id = player["player"]["id"]
+        fetchPlayerImage(player_id)
+
+    # Fetch and save player images for away players
+    for player in lineups["away"]["players"]:
+        player_id = player["player"]["id"]
+        fetchPlayerImage(player_id)
 
     # Fetch substitution incidents for the match
     incidents_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
@@ -132,6 +162,9 @@ def match_detail(match_id):
     subbed_out = {}
     goal_scorers = {}
     assists = {}  # New dictionary to store player assists and their times
+    cards = {}  # Dictionary to store card incidents
+    subbed_in = {}  # Dictionary to store players who are subbed in
+    subbed_out = {}  # Dictionary to store players who are subbed out
 
     for incident in incidents:
         # Process goals and goal scorers
@@ -164,6 +197,35 @@ def match_detail(match_id):
                     "time": incident["time"],
                     "name": incident["playerIn"]["name"],
                 }
+        # Process cards
+        if incident["incidentType"] == "card":
+            player_id = incident["player"]["id"]
+            if incident["incidentClass"] == "red":
+                card_type = "Red"
+            elif incident["incidentClass"] == "yellow":
+                card_type = "Yellow"
+            elif incident["incidentClass"] == "yellowRed":
+                card_type = "YellowRed"
+            else:
+                continue
+
+            if player_id not in cards:
+                cards[player_id] = []
+            cards[player_id].append({"time": incident["time"], "type": card_type})
+        if incident["incidentType"] == "substitution":
+            # Track the player subbed in
+            sub_in_id = incident["playerIn"]["id"]
+            subbed_in[sub_in_id] = {
+                "time": incident["time"],
+                "out_player_name": incident["playerOut"]["name"],
+            }
+
+            # Track the player subbed out
+            sub_out_id = incident["playerOut"]["id"]
+            subbed_out[sub_out_id] = {
+                "time": incident["time"],
+                "in_player_name": incident["playerIn"]["name"],
+            }
 
     return render_template(
         "match_detail.html",
@@ -173,6 +235,7 @@ def match_detail(match_id):
         subbed_in=subbed_in,
         subbed_out=subbed_out,
         assists=assists,  # Pass the assists dictionary to the template
+        cards=cards,  # Add this line to pass the cards info to the template
         home_last_10=home_last_10,  # Pass the home team's last 10 matches to the template
         away_last_10=away_last_10,  # Pass the away team's last 10 matches to the template
     )
