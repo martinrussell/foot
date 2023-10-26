@@ -9,10 +9,11 @@
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
   </head>
-
   <body>
     <div class="container">
       <h1>Today's Football Fixtures</h1>
+      {% for tournament, events in grouped_events.items() %}
+      <h2>{{ tournament }}</h2>
       <table>
         <thead>
           <tr>
@@ -21,6 +22,8 @@
             <th>Score</th>
             <th>Status</th>
             <th>Start Time</th>
+            <th>Tournament</th>
+            <th>Country</th>
           </tr>
         </thead>
         <tbody>
@@ -32,18 +35,23 @@
               {{ event.homeScore.display }} - {{ event.awayScore.display }}
             </td>
             <td class="status">
-              <a href="{{ url_for('match_detail', match_id=event.id) }}"
-                >{{ event.status.description }}</a
-              >
+              <a href="{{ url_for('match_detail', match_id=event.id) }}">
+                {{ event.status.description }}
+              </a>
             </td>
             <td>
-              {{ (event.startTimestamp|float)|datetimeformat('%d/%m/%Y %H:%M')
-              }}
+              {{ (event.startTimestamp | float) | datetimeformat('%d/%m/%Y
+              %H:%M') }}
+            </td>
+            <td class="tournament">{{ event.tournament.name }}</td>
+            <td class="tournament">
+              {{ event.tournament.uniqueTournament.category.name }}
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      {% endfor %}
     </div>
   </body>
 </html>

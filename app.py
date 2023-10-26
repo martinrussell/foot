@@ -6,6 +6,8 @@ from flask_caching import Cache
 import time
 import os
 from flask import current_app
+from collections import defaultdict
+import json
 
 app = Flask(__name__)
 app.jinja_env.globals.update(zip=zip)
@@ -86,7 +88,25 @@ def fixtures():
     data = response.json()
     events = data.get("events", [])
 
-    return render_template("fixtures.html", events=events)
+    special_tournaments = [
+        "UEFA Champions League",
+        "UEFA Europa League",
+        "UEFA Europa Conference League",
+        "UEFA Youth League",
+    ]
+
+    grouped_events = defaultdict(list)
+    for event in events:
+        tournament_name = event["tournament"]["name"]
+        # Special handling for certain tournaments
+        if any(
+            special_tournament in tournament_name
+            for special_tournament in special_tournaments
+        ):
+            tournament_name = tournament_name.split(",")[0].strip()
+        grouped_events[tournament_name].append(event)
+
+    return render_template("fixtures.html", grouped_events=grouped_events)
 
 
 def fetch_last_10_matches(team_id, current_match_id):
@@ -322,34 +342,46 @@ def team_detail(team_id):
             )
             incidents_response = requests.get(incidents_url, headers=HEADERS)
 
-            if incidents_response.status_code == 200:
-                incidents = incidents_response.json().get("incidents", [])
+            try:
+                if incidents_response.status_code == 200:
+                    try:
+                        incidents = incidents_response.json().get("incidents", [])
+                        yellow_cards_count = sum(
+                            1
+                            for incident in incidents
+                            if incident.get("incidentClass") in ["yellow", "yellowRed"]
+                            and incident.get("player", {}).get("id") == player_id
+                        )
 
-                yellow_cards_count = sum(
-                    1
-                    for incident in incidents
-                    if incident.get("incidentClass") in ["yellow", "yellowRed"]
-                    and incident.get("player", {}).get("id") == player_id
-                )
+                        red_card = any(
+                            incident
+                            for incident in incidents
+                            if incident.get("incidentClass") in ["red", "yellowRed"]
+                            and incident.get("player", {}).get("id") == player_id
+                        )
 
-                red_card = any(
-                    incident
-                    for incident in incidents
-                    if incident.get("incidentClass") in ["red", "yellowRed"]
-                    and incident.get("player", {}).get("id") == player_id
-                )
+                        cards_data[player_id][match_id] = {
+                            "yellowCardsCount": yellow_cards_count,
+                            "redCard": red_card,
+                        }
 
-                cards_data[player_id][match_id] = {
-                    "yellowCardsCount": yellow_cards_count,
-                    "redCard": red_card,
-                }
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON from the response")
+                        # Handle the error, e.g., by logging it and setting incidents to an empty list
+                        incidents = []
+                else:
+                    print(
+                        f"Failed to fetch incidents. Status code: {incidents_response.status_code}"
+                    )
+                    incidents = []  # Set default as empty list on failure
 
-        # Calculate the average and store it outside the inner match loop
-        avg_minutes = total_minutes / match_count if match_count > 0 else 0
-        avg_minutes_played[player_id] = avg_minutes
+                # Calculate the average and store it outside the inner match loop
+                avg_minutes = total_minutes / match_count if match_count > 0 else 0
+                avg_minutes_played[player_id] = avg_minutes
 
-        # Pass fouls_data, cards_data, and avg_minutes_played to your template
-
+            except Exception as e:
+                print(f"An error occurred: {e}")
+            # Pass fouls_data, cards_data, and avg_minutes_played to your template
     return render_template(
         "team_detail.html",
         team=team,
