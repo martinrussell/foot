@@ -83,7 +83,7 @@ def fixtures():
     today = datetime.now().strftime("%d/%m/%Y")
     day, month, year = today.split("/")
     url = f"https://footapi7.p.rapidapi.com/api/matches/top/{day}/{month}/{year}"
-    url = f"https://footapi7.p.rapidapi.com/api/matches/top/23/10/2023"
+    url = f"https://footapi7.p.rapidapi.com/api/matches/top/27/10/2023"
     response = requests.get(url, headers=HEADERS)
     data = response.json()
     events = data.get("events", [])
@@ -149,17 +149,22 @@ def match_detail(match_id):
     # Fetch lineups for the match
     lineup_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/lineups"
     lineup_response = requests.get(lineup_url, headers=HEADERS)
-    lineups = lineup_response.json()
-    print(lineups)
-    # Fetch and save player images for home players
-    for player in lineups["home"]["players"]:
-        player_id = player["player"]["id"]
-        fetchPlayerImage(player_id)
+    try:
+        lineups = lineup_response.json()
+        # Fetch and save player images for home players
+        for player in lineups["home"]["players"]:
+            player_id = player["player"]["id"]
+            fetchPlayerImage(player_id)
 
-    # Fetch and save player images for away players
-    for player in lineups["away"]["players"]:
-        player_id = player["player"]["id"]
-        fetchPlayerImage(player_id)
+        # Fetch and save player images for away players
+        for player in lineups["away"]["players"]:
+            player_id = player["player"]["id"]
+            fetchPlayerImage(player_id)
+    except ValueError:
+        print(
+            f"Error decoding JSON for lineups of match {match_id}. Response content: {lineup_response.content}"
+        )
+        lineups = {"home": {}, "away": {}}  # Ensuring structure with home and away keys
 
     # Fetch substitution incidents for the match
     incidents_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
