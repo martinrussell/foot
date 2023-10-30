@@ -83,7 +83,6 @@ def fixtures():
     today = datetime.now().strftime("%d/%m/%Y")
     day, month, year = today.split("/")
     url = f"https://footapi7.p.rapidapi.com/api/matches/top/{day}/{month}/{year}"
-    url = f"https://footapi7.p.rapidapi.com/api/matches/top/27/10/2023"
     response = requests.get(url, headers=HEADERS)
     data = response.json()
     events = data.get("events", [])
