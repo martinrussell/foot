@@ -285,6 +285,12 @@ def team_detail(team_id):
     matches_response = requests.get(matches_url, headers=HEADERS)
     all_matches = matches_response.json().get("events", [])
     last_5_matches = all_matches[::-1][:5]
+    last_5_finished_matches = [
+        match
+        for match in all_matches[::-1]
+        if match.get("status", {}).get("type") == "finished"
+    ][:5]
+    print(last_5_finished_matches)
 
     fouls_data = {}
     cards_data = {}
@@ -300,9 +306,8 @@ def team_detail(team_id):
         total_minutes = 0
         match_count = 0
 
-        for match in last_5_matches:
+        for match in last_5_finished_matches:
             match_id = match["id"]
-
             # API request to get statistics for player in the match
             statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/player/{player_id}/statistics"
             statistics_response = requests.get(statistics_url, headers=HEADERS)
@@ -311,6 +316,7 @@ def team_detail(team_id):
             if statistics_response.status_code == 200:
                 try:
                     statistics = statistics_response.json().get("statistics", {})
+                    print("Player Statistics : ", statistics)
                     # Store the fouls data in the nested dictionary
                     fouls_data[player_id][match_id] = {
                         "wasFouled": statistics.get("wasFouled", 0),
@@ -338,7 +344,10 @@ def team_detail(team_id):
                         "minutesPlayed": "no data",
                     }
 
-            cards_data[player_id][match_id] = {"yellowCardsCount": 0, "redCard": False}
+            cards_data[player_id][match_id] = {
+                "yellowCardsCount": 0,
+                "redCard": False,
+            }
 
             # API request to get incidents for the match
             incidents_url = (
@@ -390,7 +399,7 @@ def team_detail(team_id):
         "team_detail.html",
         team=team,
         players=players,
-        matches=last_5_matches,
+        matches=last_5_finished_matches,
         fouls_data=fouls_data,
         cards_data=cards_data,
         avg_minutes_played=avg_minutes_played,
