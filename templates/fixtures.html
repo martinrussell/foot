@@ -24,6 +24,7 @@
             <th>Start Time</th>
             <th>Tournament</th>
             <th>Country</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -47,6 +48,7 @@
             <td class="tournament">
               {{ event.tournament.uniqueTournament.category.name }}
             </td>
+            <td class="status">{{ event.status.description }}</td>
           </tr>
           {% endfor %}
         </tbody>
