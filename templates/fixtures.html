@@ -24,15 +24,17 @@
             <th>Start Time</th>
             <th>Tournament</th>
             <th>Country</th>
-            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {% for event in events %}
+          {% for event in events %} {% if (event.startTimestamp | float) |
+          datetimeformat('%d/%m/%Y') == today.strftime('%d/%m/%Y') %}
           <tr>
             <td>{{ event.homeTeam.name }}</td>
             <td>{{ event.awayTeam.name }}</td>
-            <td class="score">
+            <td
+              class="score {% if event.status.type == 'finished' %} score-finished {% elif event.status.type == 'inprogress' %} score-inprogress {% endif %}"
+            >
               {{ event.homeScore.display }} - {{ event.awayScore.display }}
             </td>
             <td class="status">
@@ -48,9 +50,8 @@
             <td class="tournament">
               {{ event.tournament.uniqueTournament.category.name }}
             </td>
-            <td class="status">{{ event.status.description }}</td>
           </tr>
-          {% endfor %}
+          {% endif %} {% endfor %}
         </tbody>
       </table>
       {% endfor %}

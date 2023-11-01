@@ -1,13 +1,115 @@
-from flask import Flask, render_template, jsonify
 import requests
-from datetime import datetime
-from requests.exceptions import JSONDecodeError
 import time
-import os
-
-from collections import defaultdict
-import json
+from flask import Flask, render_template, jsonify
 from config import HEADERS
+from requests.exceptions import JSONDecodeError
+import sqlite3
+
+# Establish a database connection
+conn = sqlite3.connect("database.sqlite")
+
+
+# Create table if it doesn't exist
+def create_table():
+    conn = sqlite3.connect("database.sqlite")
+    try:
+        cur = conn.cursor()
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS player_match_statistics (
+            match_id INT,
+            player_id INT,
+            wasFouled INT,
+            fouls INT,
+            shotOffTarget INT,
+            shotOnTarget INT,
+            yellowCardsCount INT,
+            redCard BOOLEAN,
+            avg_minutes_played FLOAT,
+            PRIMARY KEY (match_id, player_id)
+        );
+        """
+        cur.execute(create_table_sql)
+        conn.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+# Call create_table function to ensure table exists
+create_table()
+
+
+def get_new_connection():
+    return sqlite3.connect("database.sqlite")
+
+
+def fetch_statistics_if_exists(match_id, player_id):
+    """Fetch player statistics if they exist for a given match_id and player_id."""
+    conn = get_new_connection()  # get a database connection
+    cur = conn.cursor()
+
+    query = """
+        SELECT 
+            wasFouled, fouls, shotOffTarget, shotOnTarget, 
+            yellowCardsCount, redCard, avg_minutes_played
+        FROM player_match_statistics 
+        WHERE match_id = ? AND player_id = ? LIMIT 1
+    """
+    cur.execute(query, (match_id, player_id))
+    result = cur.fetchone()
+    conn.close()
+
+    if result:
+        return True, result  # Record exists, return True and the fetched values
+    else:
+        return False, None  # Record does not exist, return False and None
+
+
+def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_dict):
+    fouls_data = fouls_data[player_id].get(match_id, {})
+    cards_data = cards_data[player_id].get(match_id, {})
+
+    # Extract average minutes played for the player
+    avg_minutes_played = avg_minutes_played_dict.get(player_id, 0)
+
+    was_fouled = fouls_data.get("wasFouled", 0)
+    fouls = fouls_data.get("fouls", 0)
+    shot_off_target = fouls_data.get("shotOffTarget", 0)
+    shot_on_target = fouls_data.get("shotOnTarget", 0)
+    yellow_cards_count = cards_data.get("yellowCardsCount", 0)
+    red_card = cards_data.get("redCard", False)
+
+    sql = """ INSERT INTO player_match_statistics(match_id, player_id, wasFouled, fouls, shotOffTarget, shotOnTarget, yellowCardsCount, redCard, avg_minutes_played)
+              VALUES(?,?,?,?,?,?,?,?,?) """
+
+    conn_local = get_new_connection()
+    try:
+        cur = conn_local.cursor()
+        cur.execute(
+            sql,
+            (
+                match_id,
+                player_id,
+                was_fouled,
+                fouls,
+                shot_off_target,
+                shot_on_target,
+                yellow_cards_count,
+                red_card,
+                avg_minutes_played,
+            ),
+        )
+        conn_local.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        cur.close()
+        conn_local.close()
+
+    # Print a confirmation message
+    print(f"Data for player ID {player_id} in match ID {match_id} successfully added.")
 
 
 def team_detail(team_id):
@@ -34,7 +136,6 @@ def team_detail(team_id):
         for match in all_matches[::-1]
         if match.get("status", {}).get("type") == "finished"
     ][:5]
-    print(last_5_finished_matches)
 
     fouls_data = {}
     cards_data = {}
@@ -52,6 +153,34 @@ def team_detail(team_id):
 
         for match in last_5_finished_matches:
             match_id = match["id"]
+            exists, stats = fetch_statistics_if_exists(match_id, player_id)
+            if exists:
+                print(
+                    f"Data for match ID {match_id} and player ID {player_id} already exists."
+                )
+                # Unpack the statistics
+                (
+                    was_fouled,
+                    fouls,
+                    shot_off_target,
+                    shot_on_target,
+                    yellow_cards_count,
+                    red_card,
+                    avg_minutes_played,
+                ) = stats
+                fouls_data[player_id][match_id] = {
+                    "wasFouled": was_fouled,
+                    "fouls": fouls,
+                    "shotOffTarget": shot_off_target,
+                    "shotOnTarget": shot_on_target,
+                    "minutesPlayed": avg_minutes_played,  # Assuming avg_minutes_played refers to minutesPlayed
+                }
+                cards_data[player_id][match_id] = {
+                    "yellowCardsCount": yellow_cards_count,
+                    "redCard": red_card,
+                }
+                continue
+
             # API request to get statistics for player in the match
             statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/player/{player_id}/statistics"
             statistics_response = requests.get(statistics_url, headers=HEADERS)
@@ -60,7 +189,7 @@ def team_detail(team_id):
             if statistics_response.status_code == 200:
                 try:
                     statistics = statistics_response.json().get("statistics", {})
-                    print("Player Statistics : ", statistics)
+
                     # Store the fouls data in the nested dictionary
                     fouls_data[player_id][match_id] = {
                         "wasFouled": statistics.get("wasFouled", 0),
@@ -135,10 +264,14 @@ def team_detail(team_id):
                 # Calculate the average and store it outside the inner match loop
                 avg_minutes = total_minutes / match_count if match_count > 0 else 0
                 avg_minutes_played[player_id] = avg_minutes
+                print("Mins", avg_minutes)
 
             except Exception as e:
                 print(f"An error occurred: {e}")
             # Pass fouls_data, cards_data, and avg_minutes_played to your template
+            # Pass avg_minutes_played as a dictionary to your insert_data function
+            insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played)
+
     return render_template(
         "team_detail.html",
         team=team,

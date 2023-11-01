@@ -68,4 +68,11 @@ a:hover {
   color: #2196f3;
 }
 
+.score-finished {
+  color: grey;
+}
+
+.score-inprogress {
+  color: red;
+}
 /* Add more styles and media queries for responsiveness as needed */

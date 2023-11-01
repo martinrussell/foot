@@ -262,7 +262,6 @@
         <tr>
           <td>{{ player_data.player.id }}</td>
           <td>
-            {{ avg_minutes_played.get(player_data.player.id, 0) | round(2) }}
           </td>
           <td>
   <div style="display: flex; align-items: center;">
@@ -336,9 +335,13 @@
             <div class="data-container">
               Minutes Played:
               <span data-minutes>
-                {{ fouls_data.get(player_data.player.id, {}).get(match.id,
-                {}).get('minutesPlayed', 'No data') }}
-              </span>
+            {% set minutes = fouls_data.get(player_data.player.id, {}).get(match.id, {}).get('minutesPlayed', 'No data') %}
+            {% if minutes is number %}
+              {{ minutes | round(0) }}
+            {% else %}
+              {{ minutes }}
+            {% endif %}
+          </span>
             </div>
           </td>
 

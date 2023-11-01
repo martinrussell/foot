@@ -78,15 +78,18 @@
     }
 
     td.win {
-      color: #4caf50;
+      color: #ffff;
+      background:#4caf50
     }
 
     td.loss {
-      color: #f44336;
+      color: #ffff;
+      background:#f44336;
     }
 
     td.draw {
-      color: #ffc107;
+      color: #ffff;
+      background:#ffc107;;
     }
 
     /* Team Lineup Styles */
@@ -231,7 +234,7 @@
           <td
             class="result {% if home_match['result'] == 'win' %}win {% elif home_match['result'] == 'loss' %}loss {% else %}draw{% endif %}"
           >
-            {{ home_match['result'].title() }}
+            {{home_match['homeScore']['current']}} v {{home_match['awayScore']['current']}}
           </td>
           <td>
             {{ away_match.homeTeam.name }} vs {{ away_match.awayTeam.name }}
@@ -239,7 +242,7 @@
           <td
             class="result {% if away_match['result'] == 'win' %}win {% elif away_match['result'] == 'loss' %}loss {% else %}draw{% endif %}"
           >
-            {{ away_match['result'].title() }}
+            {{away_match['homeScore']['current']}} v {{away_match['awayScore']['current']}}
           </td>
         </tr>
         {% endfor %}
