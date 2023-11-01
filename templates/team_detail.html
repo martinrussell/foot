@@ -36,124 +36,175 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Team Details</title>
+
+
     <style>
-      .color-box {
-        width: 25px;
-        height: 25px;
-        display: inline-block;
-        border: 1px solid #ddd;
-      }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      th,
-      td {
-        padding: 8px 15px;
-        border: 1px solid #ddd;
-        font-size: 0.785714286em;
-      }
-
-      th {
-        background-color: #f2f2f2;
-      }
-
-      tbody tr:hover {
-        background-color: #f5f5f5;
-      }
-
-      .highlight-green {
-        background-color: #90ee90; /* Light Green */
-      }
-
-      .highlight-dark-green {
-        background-color: #006400; /* Dark Green */
-        color: white;
-      }
-
-      .highlight-very-dark-green {
-        background-color: #004d00; /* Very Dark Green */
-        color: white;
-      }
-
-      .team-info-container {
+ /* Base Styles for the Table */
+#myTable {
+  border-collapse: collapse;
+  margin: 0 auto; /* Center table and add horizontal margins */
   background-color: #fff;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
+  font-size: 0.7em; /* Further reduced font size for more compactness */
+  width: 90%; /* Adjust the width as needed */
 }
 
-.team-info-header {
-  background: linear-gradient(45deg, #1a78c2, #9d1a7b);
+/* Table Header */
+#myTable thead th {
+  background-color: #007bff;
   color: white;
+  border-bottom: solid 3px #d3d3d3;
+  padding: 4px; /* Further reduced padding for compactness */
+}
+
+/* Table Body */
+#myTable tbody td {
+  padding: 4px; /* Further reduced padding for compactness */
+  text-align: center; /* Center align text */
+}
+
+/* Zebra Striping for Rows and Hover */
+#myTable tbody tr:nth-child(odd) {
+  background-color: #f2f2f2;
+}
+
+#myTable tbody tr:hover {
+  background-color: #ddd;
+}
+
+
+
+/* Responsive Table Adjustments */
+@media screen and (max-width: 600px) {
+  #myTable {
+    width: 100%;
+    margin: 0; /* Remove margins in small screens for full width */
+  }
+  
+  #myTable td {
+    text-align: center;
+    display: block;
+    padding: 4px; /* Keep padding small */
+  }
+
+  /* Hide the table header on small screens */
+  #myTable thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+}
+
+/* Filters and Buttons Centered with Smaller Fonts */
+.filters-container,
+.button-group {
   text-align: center;
-  padding: 20px 10px;
+  margin-bottom: 10px;
+}
+
+.button-group button {
+  padding: 4px 8px; /* Reduced padding */
+  font-size: 0.7em; /* Reduced font size */
+}
+
+/* Smaller Dropdown Select */
+#positionFilter {
+  padding: 4px 8px;
+  font-size: 0.7em;
+}
+
+.highlight-green {
+  background-color: #90ee90; /* Light green */
+  color: black; /* Adjust text color as needed */
+}
+
+.highlight-dark-green {
+  background-color: #32cd32; /* Darker green */
+  color: black; /* Text color for better readability */
+}
+
+.highlight-very-dark-green {
+  background-color: #006400; /* Very dark green, almost like British racing green */
+  color: white; /* Text color for better readability */
+}
+
+.team-info-container {
+  max-width: 800px; /* Adjust based on your layout */
+  margin: 0 auto;
+  padding: 1em;
+  background-color: #f9f9f9; /* Light background for the container */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
 }
 
 .team-info-header h2 {
-  margin: 0;
-  color: #fff;
-  font-size: 1.75rem;
-  font-weight: bold;
+  text-align: center;
+  color: #333; /* Dark color for the header */
+  margin-bottom: 0.5em;
 }
 
 .team-info-content {
-  padding: 15px;
-  line-height: 1.6;
-  color: #333;
-}
-
-.team-info-content p {
-  margin: 10px 0;
+  text-align: center;
+  color: #555; /* Slightly lighter color for content */
 }
 
 .team-color-badge {
   display: inline-block;
-  border-radius: 9999px;
-  padding: 8px 15px;
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: medium;
-  margin: 5px;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  margin: 0.5em;
+  padding: 0.25em 0.75em;
+  color: #000; /* Black text */
+  border-radius: 4px;
+  font-size: 0.9em;
 }
 
-.team-info-container .league {
-  font-style: italic;
-  color: #555;
+.league {
+  font-weight: bold;
+  color: #333;
 }
 
-.filter-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.form-select {
-  cursor: pointer;
-  transition: all 0.3s ease-in-out;
-}
-
-.form-select:hover {
-  border-color: #666;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.label {
-  display: block;
+/* Buttons */
+button {
+  background-color: transparent;
+  color: #000; /* Black text */
+  border: 2px solid #ddd; /* Light border for a minimal look */
+  padding: 0.5em 1em;
   text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 0.9em;
+  margin: 0.25em;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+button:hover {
+  background-color: #ddd; /* Light gray background on hover */
+  color: #000; /* Maintain black text on hover */
+}
+
+/* Focus styles for accessibility */
+button:focus {
+  outline: none;
+  border-color: #555;
+  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.5);
+}
+
+/* Adjust button size for small screens */
+@media (max-width: 600px) {
+  button {
+    padding: 0.4em 0.8em;
+    font-size: 0.8em;
+  }
 }
 
 
-    </style>
+
+
+  </style>
   </head>
 
   <body>
-    <div class="team-info-container">
+  <div class="team-info-container">
   <div class="team-info-header">
     <h2>{{ team.name }}</h2>
   </div>
@@ -183,19 +234,19 @@
         <div class="inline-flex mt-4 space-x-2" role="group">
           <button
             onclick="highlightData('[data-fouls]')"
-            class="py-2 px-4 text-sm font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2  focus:ring-offset-2"
           >
             Fouls
           </button>
           <button
             onclick="highlightData('[data-shots-off]')"
-            class="py-2 px-4 text-sm font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Shots Off Target
           </button>
           <button
             onclick="highlightData('[data-shots-on]')"
-            class="py-2 px-4 text-sm font-medium text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Shots On Target
           </button>
@@ -239,12 +290,9 @@
     >
       <thead>
         <tr>
-          <th>Player ID</th>
           <th>Avg Minutes</th>
           <th>Player Name</th>
-          <th>Country</th>
           <th>Position</th>
-          <th>Preferred Foot</th>
           {% for match in matches %}
           <th>
             {{ match.homeTeam.name }} vs {{ match.awayTeam.name }} ({{
@@ -260,7 +308,6 @@
       <tbody>
         {% for player_data in players %}
         <tr>
-          <td>{{ player_data.player.id }}</td>
           <td>
           </td>
           <td>
@@ -273,9 +320,7 @@
   </div>
 </td>
 
-          <td>{{ player_data.player.country.name }}</td>
           <td>{{ player_data.player.position }}</td>
-          <td>{{ player_data.player.preferredFoot }}</td>
           {% for match in matches %}
           <td>
             <!-- Was Fouled -->

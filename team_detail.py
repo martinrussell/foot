@@ -72,7 +72,12 @@ def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_
     cards_data = cards_data[player_id].get(match_id, {})
 
     # Extract average minutes played for the player
-    avg_minutes_played = avg_minutes_played_dict.get(player_id, 0)
+    if isinstance(avg_minutes_played_dict, dict):
+        avg_minutes_played = avg_minutes_played_dict.get(player_id, 0)
+    else:
+        # Handle the error or assign a default value
+        avg_minutes_played = 0
+        print("Warning: avg_minutes_played_dict is not a dictionary.")
 
     was_fouled = fouls_data.get("wasFouled", 0)
     fouls = fouls_data.get("fouls", 0)
@@ -130,12 +135,12 @@ def team_detail(team_id):
     )
     matches_response = requests.get(matches_url, headers=HEADERS)
     all_matches = matches_response.json().get("events", [])
-    last_5_matches = all_matches[::-1][:5]
+    last_5_matches = all_matches[::-1][:10]
     last_5_finished_matches = [
         match
         for match in all_matches[::-1]
         if match.get("status", {}).get("type") == "finished"
-    ][:5]
+    ][:10]
 
     fouls_data = {}
     cards_data = {}
