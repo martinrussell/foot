@@ -53,7 +53,6 @@ def fetchPlayerImage(playerId):
         "X-RapidAPI-Key": "b42bc11359msh98e3d09a1e9557dp173da4jsn260d881d9ab9",
         "X-RapidAPI-Host": "footapi7.p.rapidapi.com",
     }
-
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()

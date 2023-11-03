@@ -157,6 +157,38 @@
       background-color: #333;
       color: white;
     }
+
+
+.lineups-header {
+  text-align: center;
+  margin-bottom:10px;
+}
+
+h2 {
+  display: block;
+  margin-bottom: 10px; /* Adjust the spacing between header and info */
+}
+
+.confirmed-info {
+  background-color: #4CAF50; /* Green background color */
+  color: white; /* White text color */
+  padding: 10px; /* Add padding for better appearance */
+  text-align: center;
+  display: inline-block;
+  border-radius: 5px; /* Rounded corners */
+}
+
+.confirmed-marker {
+  width: 10px;
+  height: 10px;
+  background-color: green;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px; /* Adjust the spacing as needed */
+}
+
+
+
   </style>
 
   <body class="bg-gray-100 font-sans text-gray-800">
@@ -248,7 +280,15 @@
         {% endfor %}
       </tbody>
     </table>
-    <h2>Team Lineups</h2>
+    <div class="lineups-header">
+  <h2>Team Lineups</h2>
+  {% if lineups.confirmed %}
+    <div class="confirmed-info">
+      <div class="confirmed-marker"></div>
+      <span>Lineups Confirmed</span>
+    </div>
+  {% endif %}
+</div>
     <div class="lineups-container">
       <!-- Home Team Lineup -->
       <div class="lineup">

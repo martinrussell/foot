@@ -51,7 +51,7 @@
 
 /* Table Header */
 #myTable thead th {
-  background-color: #007bff;
+  background-color:#333;
   color: white;
   border-bottom: solid 3px #d3d3d3;
   padding: 4px; /* Further reduced padding for compactness */
@@ -198,12 +198,25 @@ button:focus {
 }
 
 
+.highlight-win-green {
+  background-color: green!important;
+}
+
+.highlight-loss-red {
+  background-color: red!important;
+}
+
+.highlight-draw-grey {
+  background-color: grey!important;
+}
+
 
 
   </style>
   </head>
 
   <body>
+    
   <div class="team-info-container">
   <div class="team-info-header">
     <h2>{{ team.name }}</h2>
@@ -224,6 +237,7 @@ button:focus {
     <p class="league">League: {{ team.tournament.name }}</p>
   </div>
 </div>
+
 
 
     </div>
@@ -266,46 +280,50 @@ button:focus {
       </div>
     </div>
 
-    <div class="filter-container">
-  <div class="mb-4 flex justify-center items-center">
-    <label for="positionFilter" class="mr-2 text-lg font-medium">Filter by Position:</label>
-    <select
-      id="positionFilter"
-      class="form-select appearance-none block w-auto bg-white border border-gray-300 rounded-full py-2 px-4 text-sm text-gray-700 leading-5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-    >
-      <option value="">All</option>
-      <option value="G">Goalkeeper</option>
-      <option value="D">Defender</option>
-      <option value="M">Midfielder</option>
-      <option value="F">Forward</option>
-      <!-- ... other positions ... -->
-    </select>
-  </div>
-</div>
-
-
     <table
       id="myTable"
       class="table table-bordered table-striped table-hover small"
     >
       <thead>
         <tr>
-          <th>Avg Minutes</th>
-          <th>Player Name</th>
-          <th>Position</th>
+      <th>Avg Minutes</th>
+     <th>Player Name</th>
+     <th>Starting / Playing</th>
+       <th>Position</th>
           {% for match in matches %}
-          <th>
-            {{ match.homeTeam.name }} vs {{ match.awayTeam.name }} ({{
-            match.startTimestamp|format_timestamp }})
-            <br />
-            {{ match.tournament.name}}
-            <br />
-            {{ match.id}}
-          </th>
+          <th class="
+    {% if match.winnerCode == 2 and team_id == match.awayTeam.id %}
+      highlight-win-green
+    {% elif match.winnerCode == 1 and team_id == match.awayTeam.id %}
+      highlight-loss-red
+    {% elif match.winnerCode == 1 and team_id == match.homeTeam.id %}
+      highlight-win-green
+    {% elif match.winnerCode == 2 and team_id == match.homeTeam.id %}
+      highlight-loss-red
+    {% elif match.winnerCode == 3 %}
+      highlight-draw-grey
+    {% endif %}
+">
+  {% if team_id == match.homeTeam.id %}
+    {{ match.awayTeam.name }} (H)
+    <br>
+    {{ match.homeScore.current }} v {{ match.awayScore.current}}
+  {% elif team_id == match.awayTeam.id %}
+    {{ match.homeTeam.name }} (A)
+    <br>
+    {{ match.homeScore.current }} v {{ match.awayScore.current}}
+  {% else %}
+    <!-- Handle other cases or remove this block if not needed -->
+  {% endif %}
+</th>
           {% endfor %}
         </tr>
       </thead>
+
+  </tr>
+
       <tbody>
+        
         {% for player_data in players %}
         <tr>
           <td>
@@ -317,9 +335,19 @@ button:focus {
       alt="Player Image" 
       style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
     {{ player_data.player.name }}
-  </div>
-</td>
+</td>     
+<td>  
+          {% for player_lineup in lineups.home.players %}
+            {% if player_data.player.id == player_lineup.player.id and not player_lineup.substitute %}
+             True
+            {% endif %}
+          {% endfor %}
 
+      {% for player_lineup in lineups.away.players %}
+            {% if player_data.player.id == player_lineup.player.id and not player_lineup.substitute %}
+             True
+            {% endif %}
+          {% endfor %}</td>
           <td>{{ player_data.player.position }}</td>
           {% for match in matches %}
           <td>
@@ -367,7 +395,6 @@ button:focus {
                 {}).get('yellowCardsCount', 0) }}
               </span>
             </div>
-
             <!-- Red Card -->
             <div class="data-container">
               Red Card:
@@ -389,7 +416,6 @@ button:focus {
           </span>
             </div>
           </td>
-
           {% endfor %}
         </tr>
         {% endfor %}
@@ -446,18 +472,11 @@ button:focus {
     });
 
     $("#myTable").DataTable({
-      order: [[1, "desc"]],
       paging: false,
       lengthChange: false, // Assuming the minutes played is the second column (0-indexed)
-    });
+      ordering: false, // Disable sorting for all columns
+      searching: false // This will remove the search box
 
-    $(document).ready(function () {
-      var table = $("#myTable").DataTable();
-
-      // Assuming you have a <select id="positionFilter"> element with position options
-      $("#positionFilter").on("change", function () {
-        table.column(4).search(this.value).draw(); // Assuming position is the fifth column
-      });
     });
   </script>
 </html>

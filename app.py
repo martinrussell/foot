@@ -60,7 +60,6 @@ def fixtures():
     response = requests.get(url, headers=HEADERS)
     data = response.json()
     events = data.get("events", [])
-    print(events[0])
 
     special_tournaments = [
         "UEFA Champions League",
@@ -75,6 +74,8 @@ def fixtures():
     grouped_events = defaultdict(list)
     for event in events:
         tournament_name = event["tournament"]["name"]
+        tournament_country = event["tournament"]["category"]["name"]
+        tournament_name = tournament_country + " - " + tournament_name
         # Special handling for certain tournaments
         if any(
             special_tournament in tournament_name

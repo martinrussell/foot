@@ -133,8 +133,53 @@ def team_detail(team_id):
     matches_url = (
         f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/previous/0"
     )
-    matches_response = requests.get(matches_url, headers=HEADERS)
-    all_matches = matches_response.json().get("events", [])
+    next_matches_response = requests.get(matches_url, headers=HEADERS)
+    all_matches = next_matches_response.json().get("events", [])
+    print(all_matches[0]["status"])
+
+    # Fetch the next match for the team
+    next_matches_url = (
+        f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/next/0"
+    )
+    next_matches_response = requests.get(next_matches_url, headers=HEADERS)
+    next_matches = next_matches_response.json().get("events", [])
+    next_match_id = next_matches[0]["id"]
+
+    near_matches_url = (
+        next_matches_url
+    ) = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/near"
+    near_matches_response = requests.get(near_matches_url, headers=HEADERS)
+    near_matches = near_matches_response.json().get("previousEvent", [])
+    near_match_status = near_matches["status"]
+    live_match_id = near_matches["id"]
+    if (
+        near_match_status["type"] == "inprogress"
+        or near_match_status["type"] == "notstarted"
+    ):
+        # Fetch lineups for the match
+        lineup_url = (
+            f"https://footapi7.p.rapidapi.com/api/match/{live_match_id}/lineups"
+        )
+        lineup_response = requests.get(lineup_url, headers=HEADERS)
+        try:
+            lineups = lineup_response.json()
+            # Fetch and save player images for home players
+            for player in lineups["home"]["players"]:
+                player_id = player["player"]["id"]
+            # Fetch and save player images for away players
+            for player in lineups["away"]["players"]:
+                player_id = player["player"]["id"]
+        except ValueError:
+            print(
+                f"Error decoding JSON for lineups of match {live_match_id}. Response content: {lineup_response.content}"
+            )
+            lineups = {
+                "home": {},
+                "away": {},
+            }  # Ensuring structure with home and away keys
+
+    # Check to see if they currently have a match
+
     last_5_matches = all_matches[::-1][:10]
     last_5_finished_matches = [
         match
@@ -280,9 +325,11 @@ def team_detail(team_id):
     return render_template(
         "team_detail.html",
         team=team,
+        team_id=team_id,
         players=players,
         matches=last_5_finished_matches,
         fouls_data=fouls_data,
         cards_data=cards_data,
+        lineups=lineups,
         avg_minutes_played=avg_minutes_played,
     )

@@ -13,9 +13,11 @@
     <div class="container">
       <h1>Today's Football Fixtures</h1>
       {% for tournament, events in grouped_events.items() %}
-      <h2>{{ tournament }}</h2>
-      <table>
+      <table id="{{tournament}}">
         <thead>
+          <tr>
+            <th style="background: white; color: black">{{ tournament }}</th>
+          </tr>
           <tr>
             <th>Home Team</th>
             <th>Away Team</th>
@@ -57,4 +59,19 @@
       {% endfor %}
     </div>
   </body>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const tables = document.querySelectorAll("table");
+
+      tables.forEach((table) => {
+        const hasData = Array.from(table.querySelectorAll("td")).some(
+          (td) => td.textContent.trim() !== ""
+        );
+        if (!hasData) {
+          table.style.display = "none";
+        }
+      });
+    });
+  </script>
 </html>
