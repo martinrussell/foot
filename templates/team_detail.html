@@ -39,176 +39,320 @@
 
 
     <style>
-
- /* Base Styles for the Table */
-#myTable {
-  border-collapse: collapse;
-  margin: 0 auto; /* Center table and add horizontal margins */
-  background-color: #fff;
-  font-size: 0.7em; /* Further reduced font size for more compactness */
-  width: 90%; /* Adjust the width as needed */
+/* Body and Background */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffff!important;
+    color: black!important;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
 }
 
-/* Table Header */
-#myTable thead th {
-  background-color:#333;
-  color: white;
-  border-bottom: solid 3px #d3d3d3;
-  padding: 4px; /* Further reduced padding for compactness */
-}
-
-/* Table Body */
-#myTable tbody td {
-  padding: 4px; /* Further reduced padding for compactness */
-  text-align: center; /* Center align text */
-}
-
-/* Zebra Striping for Rows and Hover */
-#myTable tbody tr:nth-child(odd) {
-  background-color: #f2f2f2;
-}
-
-#myTable tbody tr:hover {
-  background-color: #ddd;
-}
-
-
-
-/* Responsive Table Adjustments */
-@media screen and (max-width: 600px) {
-  #myTable {
-    width: 100%;
-    margin: 0; /* Remove margins in small screens for full width */
-  }
-  
-  #myTable td {
-    text-align: center;
-    display: block;
-    padding: 4px; /* Keep padding small */
-  }
-
-  /* Hide the table header on small screens */
-  #myTable thead tr {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-  }
-}
-
-/* Filters and Buttons Centered with Smaller Fonts */
-.filters-container,
-.button-group {
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.button-group button {
-  padding: 4px 8px; /* Reduced padding */
-  font-size: 0.7em; /* Reduced font size */
-}
-
-/* Smaller Dropdown Select */
-#positionFilter {
-  padding: 4px 8px;
-  font-size: 0.7em;
-}
-
-.highlight-green {
-  background-color: #90ee90; /* Light green */
-  color: black; /* Adjust text color as needed */
-}
-
-.highlight-dark-green {
-  background-color: #32cd32; /* Darker green */
-  color: black; /* Text color for better readability */
-}
-
-.highlight-very-dark-green {
-  background-color: #006400; /* Very dark green, almost like British racing green */
-  color: white; /* Text color for better readability */
-}
-
+/* Container Styles */
 .team-info-container {
-  max-width: 800px; /* Adjust based on your layout */
-  margin: 0 auto;
-  padding: 1em;
-  background-color: #f9f9f9; /* Light background for the container */
+  background-color: #ffffff!important;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  padding: 2em;
+  width: 90%;
+  max-width: 800px;
 }
 
 .team-info-header h2 {
-  text-align: center;
-  color: #333; /* Dark color for the header */
+  font-size: 24px;
+  color: black;
   margin-bottom: 0.5em;
 }
 
 .team-info-content {
-  text-align: center;
-  color: #555; /* Slightly lighter color for content */
+  font-size: 16px;
+  color: #bbbbbb;
 }
 
 .team-color-badge {
   display: inline-block;
   margin: 0.5em;
-  padding: 0.25em 0.75em;
-  color: #000; /* Black text */
+  padding: 0.25em 0.5em;
+  color: #ffffff;
   border-radius: 4px;
-  font-size: 0.9em;
-}
-
-.league {
+  font-size: 16px;
   font-weight: bold;
-  color: #333;
 }
 
-/* Buttons */
-button {
-  background-color: transparent;
-  color: #000; /* Black text */
-  border: 2px solid #ddd; /* Light border for a minimal look */
-  padding: 0.5em 1em;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 0.9em;
-  margin: 0.25em;
+/* Buttons Styles */
+.button-group button {
+  background-color: #292929;
+  color: #ffffff;
+  border: 2px solid #545454;
+  padding: 8px 16px;
+  font-size: 16px;
+  margin: 5px;
   border-radius: 4px;
-  transition: background-color 0.3s, color 0.3s;
 }
 
-button:hover {
-  background-color: #ddd; /* Light gray background on hover */
-  color: #000; /* Maintain black text on hover */
+.button-group button:hover {
+  background-color: #545454;
+  color: #ffffff;
 }
 
-/* Focus styles for accessibility */
-button:focus {
-  outline: none;
-  border-color: #555;
-  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.5);
+/* Table Styles */
+#myTable {
+  border-collapse: collapse;
+  margin: 0 auto;
+  background-color: #292929;
+  font-size: 14px;
+  width: 100%;
+  border: 2px solid #545454;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-/* Adjust button size for small screens */
-@media (max-width: 600px) {
-  button {
-    padding: 0.4em 0.8em;
-    font-size: 0.8em;
-  }
+#myTable thead th {
+  background-color: #292929;
+  color: #ffffff;
+  border-bottom: 2px solid #545454;
+  padding: 8px;
 }
 
+#myTable tbody td {
+  padding: 8px;
+  text-align: center;
+  border: 1px solid #545454;
+}
+
+#myTable tbody tr:nth-child(odd) {
+  background-color: #1f1f1f;
+}
+
+#myTable tbody tr:hover {
+  background-color: #333333;
+}
+
+/* Data Highlight Styles */
+.highlight-green {
+  background-color: #14b91d;
+  color: #ffffff;
+}
+
+.highlight-dark-green {
+  background-color: #0e6d0a;
+  color: #ffffff;
+}
+
+.highlight-very-dark-green {
+  background-color: #004000;
+  color: #ffffff;
+}
+
+/* Minutes Played Style */
+#myTable tbody tr td:first-child {
+  font-weight: bold;
+  color: black;
+}
+
+/* Filter Button Styles */
+.filters-container {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Players Button Style */
+button[data-players] {
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #292929;
+  color: #ffffff;
+  border: 2px solid #545454;
+  border-radius: 4px;
+}
+
+/* Buttons Color Style */
+button[data-players]:hover,
+button[data-players].active {
+  background-color: #545454;
+}
+
+/* Show Starting XI Button Style */
+button[data-starting] {
+  padding: 8px 16px;
+  font-size: 16px;
+  background-color: #292929;
+  color: #ffffff;
+  border: 2px solid #545454;
+  border-radius: 4px;
+}
+
+/* Starting XI Button Color Style */
+button[data-starting]:hover,
+button[data-starting].active {
+  background-color: #545454;
+}
+/* Body and Background */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column; /* Change the flex direction to column */
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Container Styles */
+.team-info-container {
+  display: flex;
+  flex-direction: column; /* Align team info at the top */
+  background-color: #1f1f1f;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  padding: 2em;
+  width: 90%;
+  max-width: 800px;
+  margin-top: 2em; /* Add margin to move the container down from the top */
+}
+
+.team-info-header {
+  /* No width needed for the header, it will expand to fit content */
+}
+
+.team-info-content {
+  /* No width needed for the content, it will expand to fit content */
+  font-size: 16px;
+  color: #bbbbbb;
+}
+
+.team-color-badge {
+  display: inline-block;
+  margin: 0.5em;
+  padding: 0.25em 0.5em;
+  color: #ffffff;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+}
+/* Update the CSS to remove white background and make text smaller */
+#myTable {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0;
+  background-color: transparent; /* Remove white background */
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#myTable thead {
+  background-color: #2d2d2d;
+}
+
+#myTable thead th {
+  padding: 8px; /* Reduce padding */
+  text-align: center;
+  color: #ffffff;
+  border-bottom: 2px solid #444;
+  font-size: 10px; /* Reduce font size */
+}
+
+#myTable tbody td {
+  padding: 8px; /* Reduce padding */
+  text-align: center;
+  font-weight: bold;
+  color: black;
+  border-bottom: 1px solid #444;
+  font-size: 10px; /* Reduce font size */
+  background: white;
+}
+
+#myTable tbody tr:nth-child(odd) {
+  background-color: #111;
+}
+
+#myTable tbody tr:hover {
+  background-color: #333;
+}
+
+.button-group button {
+  padding: 6px 10px; /* Reduce button padding */
+  font-size: 12px; /* Reduce button font size */
+  border: none;
+  margin: 5px;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.button-group button:hover {
+  background-color: #333;
+}
 
 .highlight-win-green {
-  background-color: green!important;
+  background-color: #4caf50 !important;
 }
 
 .highlight-loss-red {
-  background-color: red!important;
+  background-color: #f44336 !important;
 }
 
 .highlight-draw-grey {
-  background-color: grey!important;
+  background-color: #757575 !important;
 }
+
+
+/* Common button styles */
+.btn-stat {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #d1d1d1;
+  border-radius: 6px;
+  transition: background-color 0.2s, color 0.2s;
+  cursor: pointer;
+  margin-bottom: 8px; /* Add space between buttons */
+}
+
+/* Styles for specific buttons */
+.btn-stat.fouls {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.btn-stat.shots-off {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.btn-stat.shots-on {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.btn-stat.yellow-cards {
+  background-color: #ffeb3b;
+  color: #000000;
+  border-color: #ffeb3b;
+}
+
+.btn-stat.red-card {
+  background-color: #ff5722;
+  color: #ffffff;
+  border-color: #ff5722;
+}
+
+.btn-stat.starting-xi {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+
+
 
 
 
@@ -216,79 +360,61 @@ button:focus {
   </head>
 
   <body>
-    
-  <div class="team-info-container">
-  <div class="team-info-header">
-    <h2>{{ team.name }}</h2>
-  </div>
-  <div class="team-info-content text-center">
-    <p>Full Name: {{ team.fullName }}</p>
-    <p>Short Name: {{ team.shortName }}</p>
-    <p>Manager: {{ team.manager.name }} from {{ team.manager.country.name }}</p>
-    <p>Venue: {{ team.venue.stadium.name }} in {{ team.venue.city.name }}</p>
-    <div class="flex justify-center">
-      <span class="team-color-badge" style="background-color: {{ team.teamColors.primary }}">
-        Primary - {{ team.teamColors.primary }}
-      </span>
-      <span class="team-color-badge" style="background-color: {{ team.teamColors.secondary }}">
-        Secondary - {{ team.teamColors.secondary }}
-      </span>
+</div>
+<div class="container mx-auto mt-6">
+  <div class="text-center mb-8">
+    <h2 class="text-2xl font-bold">{{team.name}} - Player Statistics</h2>
+    <div class="inline-flex mt-4 space-x-2" role="group">
+      <button
+        onclick="highlightData('[data-fouls]')"
+        class="btn-stat fouls"
+      >
+        Fouls
+      </button>
+      <button
+        onclick="highlightData('[data-shots-off]')"
+        class="btn-stat shots-off"
+      >
+        Shots Off Target
+      </button>
+      <button
+        onclick="highlightData('[data-shots-on]')"
+        class="btn-stat shots-on"
+      >
+        Shots On Target
+      </button>
+      <button
+        onclick="highlightData('[data-yellow]')"
+        class="btn-stat yellow-cards"
+      >
+        Yellow Cards
+      </button>
+      <button
+        onclick="highlightData('[data-red]')"
+        class="btn-stat red-card"
+      >
+        Red Card
+      </button>
     </div>
-    <p class="league">League: {{ team.tournament.name }}</p>
+    <div class="mt-4">
+      <button
+        onclick="showRowsWithYes()"
+        class="btn-stat starting-xi"
+      >
+        Starting XI (Confirmed)
+      </button>
+    </div>
   </div>
 </div>
-
-
-
-    </div>
-
-    <div class="container mx-auto mt-6">
-      <div class="text-center mb-8">
-        <h2 class="text-2xl font-bold">Player Statistics</h2>
-        <div class="inline-flex mt-4 space-x-2" role="group">
-          <button
-            onclick="highlightData('[data-fouls]')"
-            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2  focus:ring-offset-2"
-          >
-            Fouls
-          </button>
-          <button
-            onclick="highlightData('[data-shots-off]')"
-            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Shots Off Target
-          </button>
-          <button
-            onclick="highlightData('[data-shots-on]')"
-            class="py-2 px-4 text-sm font-medium text-black-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Shots On Target
-          </button>
-          <button
-            onclick="highlightData('[data-yellow]')"
-            class="py-2 px-4 text-sm font-medium text-yellow-500 border border-yellow-500 rounded hover:bg-yellow-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2"
-          >
-            Yellow Cards
-          </button>
-          <button
-            onclick="highlightData('[data-red]')"
-            class="py-2 px-4 text-sm font-medium text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
-          >
-            Red Card
-          </button>
-        </div>
-      </div>
-    </div>
 
     <table
       id="myTable"
       class="table table-bordered table-striped table-hover small"
     >
       <thead>
-        <tr>
-      <th>Avg Minutes</th>
+      <tr>
      <th>Player Name</th>
-     <th>Starting / Playing</th>
+     <th>Starting</th>
        <th>Position</th>
           {% for match in matches %}
           <th class="
@@ -308,10 +434,14 @@ button:focus {
     {{ match.awayTeam.name }} (H)
     <br>
     {{ match.homeScore.current }} v {{ match.awayScore.current}}
+     <br>
+    {{match.tournament.name}}
   {% elif team_id == match.awayTeam.id %}
     {{ match.homeTeam.name }} (A)
     <br>
     {{ match.homeScore.current }} v {{ match.awayScore.current}}
+    <br>
+    {{match.tournament.name}}
   {% else %}
     <!-- Handle other cases or remove this block if not needed -->
   {% endif %}
@@ -325,9 +455,8 @@ button:focus {
       <tbody>
         
         {% for player_data in players %}
+        
         <tr>
-          <td>
-          </td>
           <td>
   <div style="display: flex; align-items: center;">
     <img 
@@ -336,19 +465,27 @@ button:focus {
       style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
     {{ player_data.player.name }}
 </td>     
-<td>  
-          {% for player_lineup in lineups.home.players %}
-            {% if player_data.player.id == player_lineup.player.id and not player_lineup.substitute %}
-             True
-            {% endif %}
-          {% endfor %}
+<td>
 
-      {% for player_lineup in lineups.away.players %}
-            {% if player_data.player.id == player_lineup.player.id and not player_lineup.substitute %}
-             True
-            {% endif %}
-          {% endfor %}</td>
-          <td>{{ player_data.player.position }}</td>
+
+{% set is_in_lineup = false %}
+{% if lineups is defined and lineups.home is defined and lineups.away is defined and lineups.confirmed == True %}
+  {% set home_players = lineups.home.players|default([]) %}
+  {% set away_players = lineups.away.players|default([]) %}
+  {% set all_lineups = home_players + away_players %}
+  {% if all_lineups %}
+    {% for player_lineup in all_lineups %}
+      {% if player_data.player.id == player_lineup.player.id and not player_lineup.substitute %}
+        {% set is_in_lineup = true %}
+        Yes
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endif %}
+
+
+</td>
+      <td>{{ player_data.player.position }}</td>
           {% for match in matches %}
           <td>
             <!-- Was Fouled -->
@@ -404,12 +541,12 @@ button:focus {
               </span>
             </div>
             <!-- Minutes Played -->
-            <div class="data-container">
-              Minutes Played:
-              <span data-minutes>
+            <div class="data-container-mins">
+            <span data-minutes>
             {% set minutes = fouls_data.get(player_data.player.id, {}).get(match.id, {}).get('minutesPlayed', 'No data') %}
             {% if minutes is number %}
-              {{ minutes | round(0) }}
+            <br>
+              {{ minutes | round(0) }} mins
             {% else %}
               {{ minutes }}
             {% endif %}
@@ -478,5 +615,25 @@ button:focus {
       searching: false // This will remove the search box
 
     });
+
+
+    function showRowsWithYes() {
+  var table = document.getElementById('myTable'); // Get the table by its ID
+  var rows = table.getElementsByTagName('tr'); // Get all table rows
+
+  for (var i = 1; i < rows.length; i++) {
+    var cell = rows[i].getElementsByTagName('td')[1]; // Get the 3rd cell (index 2)
+
+    if (cell && cell.textContent.trim() !== 'Yes') {
+      rows[i].style.display = 'none'; // Hide the row
+    }
+  }
+}
+
+highlightData('[data-fouls]')
+
+
+
+
   </script>
 </html>

@@ -122,23 +122,26 @@ def match_detail(match_id):
 
     for incident in incidents:
         # Process goals and goal scorers
-        if incident["incidentType"] == "goal" and "player" in incident:
-            player_id = incident["player"]["id"]
-            if player_id in goal_scorers:
-                goal_scorers[player_id].append(incident["time"])
-            else:
-                goal_scorers[player_id] = [incident["time"]]
+        # Process goals and goal scorers
+        if incident["incidentType"] == "goal":
+            player_id = incident.get("player", {}).get("id")
+            if player_id is not None:
+                if player_id in goal_scorers:
+                    goal_scorers[player_id].append(incident["time"])
+                else:
+                    goal_scorers[player_id] = [incident["time"]]
 
         # Process goal assists
-        if incident["incidentType"] == "goal" and "assist1" in incident:
-            assist_player_id = incident["assist1"]["id"]
-            if assist_player_id in assists:
-                assists[assist_player_id].append(incident["time"])
-            else:
-                assists[assist_player_id] = [incident["time"]]
+        if incident["incidentType"] == "goal":
+            assist_player_id = incident.get("assist1", {}).get("id")
+            if assist_player_id is not None:
+                if assist_player_id in assists:
+                    assists[assist_player_id].append(incident["time"])
+                else:
+                    assists[assist_player_id] = [incident["time"]]
 
         # Process substitutions
-        elif incident["incidentType"] == "substitution":
+        if incident["incidentType"] == "substitution":
             # Map the ID of the player coming in to the name of the player going out
             if incident["playerIn"]["id"] not in subbed_in:
                 subbed_in[incident["playerIn"]["id"]] = {
@@ -153,19 +156,21 @@ def match_detail(match_id):
                 }
         # Process cards
         if incident["incidentType"] == "card":
-            player_id = incident["player"]["id"]
-            if incident["incidentClass"] == "red":
-                card_type = "Red"
-            elif incident["incidentClass"] == "yellow":
-                card_type = "Yellow"
-            elif incident["incidentClass"] == "yellowRed":
-                card_type = "YellowRed"
-            else:
-                continue
+            player_id = incident.get("player", {}).get("id")
+            if player_id is not None:
+                if incident["incidentClass"] == "red":
+                    card_type = "Red"
+                elif incident["incidentClass"] == "yellow":
+                    card_type = "Yellow"
+                elif incident["incidentClass"] == "yellowRed":
+                    card_type = "YellowRed"
+                else:
+                    continue
 
-            if player_id not in cards:
-                cards[player_id] = []
-            cards[player_id].append({"time": incident["time"], "type": card_type})
+                if player_id not in cards:
+                    cards[player_id] = []
+                cards[player_id].append({"time": incident["time"], "type": card_type})
+
         if incident["incidentType"] == "substitution":
             # Track the player subbed in
             sub_in_id = incident["playerIn"]["id"]

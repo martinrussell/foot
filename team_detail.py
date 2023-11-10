@@ -150,33 +150,56 @@ def team_detail(team_id):
     ) = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/near"
     near_matches_response = requests.get(near_matches_url, headers=HEADERS)
     near_matches = near_matches_response.json().get("previousEvent", [])
-    near_match_status = near_matches["status"]
-    live_match_id = near_matches["id"]
-    if (
-        near_match_status["type"] == "inprogress"
-        or near_match_status["type"] == "notstarted"
-    ):
-        # Fetch lineups for the match
-        lineup_url = (
-            f"https://footapi7.p.rapidapi.com/api/match/{live_match_id}/lineups"
-        )
-        lineup_response = requests.get(lineup_url, headers=HEADERS)
+    previous_event = near_matches["status"]
+    print(previous_event)
+    previous_match_id = near_matches["id"]
+
+    near_matches_response = requests.get(near_matches_url, headers=HEADERS)
+    near_matches = near_matches_response.json().get("nextEvent", [])
+    next_match = near_matches["status"]
+    next_match_id = near_matches["id"]
+    if previous_event["type"] == "inprogress":
+        print("game in progress")
+        live_match_id = previous_match_id
+    if previous_event["type"] != "inprogress":
+        print("game coming up")
+        live_match_id = next_match_id
+
+    # Fetch lineups for the match
+    lineup_url = f"https://footapi7.p.rapidapi.com/api/match/{live_match_id}/lineups"
+    lineup_response = requests.get(lineup_url, headers=HEADERS)
+
+    # Check if the lineup request was successful
+    if lineup_response.status_code == 200:
         try:
             lineups = lineup_response.json()
-            # Fetch and save player images for home players
-            for player in lineups["home"]["players"]:
-                player_id = player["player"]["id"]
-            # Fetch and save player images for away players
-            for player in lineups["away"]["players"]:
-                player_id = player["player"]["id"]
-        except ValueError:
-            print(
-                f"Error decoding JSON for lineups of match {live_match_id}. Response content: {lineup_response.content}"
-            )
-            lineups = {
-                "home": {},
-                "away": {},
-            }  # Ensuring structure with home and away keys
+
+        except JSONDecodeError:
+            print("Failed to decode JSON for lineups data")
+            lineups = {"home": {}, "away": {}}  # Provide a default value
+    else:
+        print(f"Failed to fetch lineups. Status code: {lineup_response.status_code}")
+        lineups = {
+            "home": {},
+            "away": {},
+        }  # Provide a default value in case of failure
+
+    try:
+        lineups = lineup_response.json()
+        # Fetch and save player images for home players
+        for player in lineups["home"]["players"]:
+            player_id = player["player"]["id"]
+        # Fetch and save player images for away players
+        for player in lineups["away"]["players"]:
+            player_id = player["player"]["id"]
+    except ValueError:
+        print(
+            f"Error decoding JSON for lineups of match {live_match_id}. Response content: {lineup_response.content}"
+        )
+        lineups = {
+            "home": {},
+            "away": {},
+        }  # Ensuring structure with home and away keys
 
     # Check to see if they currently have a match
 

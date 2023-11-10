@@ -1,0 +1,390 @@
+from flask import Flask, render_template, jsonify
+import requests
+from datetime import datetime
+from requests.exceptions import JSONDecodeError
+from flask_caching import Cache
+import time
+import os
+from flask import current_app
+from collections import defaultdict
+import json
+import sqlite3
+from config import HEADERS
+from tqdm import tqdm
+import concurrent.futures  # Add this import
+
+
+# Create table if it doesn't exist
+def create_table():
+    conn = sqlite3.connect("database.sqlite")
+    try:
+        cur = conn.cursor()
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS player_match_statistics (
+            match_id INT,
+            player_id INT,
+            wasFouled INT,
+            fouls INT,
+            shotOffTarget INT,
+            shotOnTarget INT,
+            yellowCardsCount INT,
+            redCard BOOLEAN,
+            avg_minutes_played FLOAT,
+            PRIMARY KEY (match_id, player_id)
+        );
+        """
+        cur.execute(create_table_sql)
+        conn.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+
+# Call create_table function to ensure table exists
+create_table()
+
+
+def get_fixtures():
+    today = datetime.now().strftime("%d/%m/%Y")
+    day, month, year = today.split("/")
+    url = f"https://footapi7.p.rapidapi.com/api/matches/top/{day}/{month}/{year}"
+    response = requests.get(url, headers=HEADERS)
+    data = response.json()
+    events = data.get("events", [])
+
+    # Use tqdm to create a progress bar
+    for event in tqdm(events, desc="Processing fixtures"):
+        current_date = datetime.now().strftime("%d/%m/%Y")
+        formatted_start_date = datetime.fromtimestamp(event["startTimestamp"]).strftime(
+            "%d/%m/%Y"
+        )
+        if formatted_start_date == current_date:
+            home_team_name = event["homeTeam"]["name"]
+            away_team_name = event["awayTeam"]["name"]
+            home_team_id = event["homeTeam"]["id"]
+            away_team_id = event["awayTeam"]["id"]
+            print("Event : ", home_team_name, " v ", away_team_name)
+
+            # Record the start time before making the next event request
+            start_time = time.time()
+
+            # Use concurrent.futures to fetch team details and player statistics concurrently
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [
+                    executor.submit(team_detail, home_team_id),
+                    executor.submit(team_detail, away_team_id),
+                ]
+
+                # Wait for both tasks to complete before moving on to the next event
+                concurrent.futures.wait(futures)
+
+            # Calculate the time it took to get to the next event
+            elapsed_time = time.time() - start_time
+            print(f"Time to next event: {elapsed_time:.2f} seconds")
+
+
+def get_new_connection():
+    return sqlite3.connect("database.sqlite")
+
+
+def fetch_statistics_if_exists(match_id, player_id):
+    """Fetch player statistics if they exist for a given match_id and player_id."""
+    conn = get_new_connection()  # get a database connection
+    cur = conn.cursor()
+
+    query = """
+        SELECT 
+            wasFouled, fouls, shotOffTarget, shotOnTarget, 
+            yellowCardsCount, redCard, avg_minutes_played
+        FROM player_match_statistics 
+        WHERE match_id = ? AND player_id = ? LIMIT 1
+    """
+    cur.execute(query, (match_id, player_id))
+    result = cur.fetchone()
+    conn.close()
+
+    if result:
+        return True, result  # Record exists, return True and the fetched values
+    else:
+        return False, None  # Record does not exist, return False and None
+
+
+def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_dict):
+    fouls_data = fouls_data[player_id].get(match_id, {})
+    cards_data = cards_data[player_id].get(match_id, {})
+
+    # Extract average minutes played for the player
+    if isinstance(avg_minutes_played_dict, dict):
+        avg_minutes_played = avg_minutes_played_dict.get(player_id, 0)
+    else:
+        # Handle the error or assign a default value
+        avg_minutes_played = 0
+        # print("Warning: avg_minutes_played_dict is not a dictionary.")
+
+    was_fouled = fouls_data.get("wasFouled", 0)
+    fouls = fouls_data.get("fouls", 0)
+    shot_off_target = fouls_data.get("shotOffTarget", 0)
+    shot_on_target = fouls_data.get("shotOnTarget", 0)
+    yellow_cards_count = cards_data.get("yellowCardsCount", 0)
+    red_card = cards_data.get("redCard", False)
+
+    sql = """ INSERT INTO player_match_statistics(match_id, player_id, wasFouled, fouls, shotOffTarget, shotOnTarget, yellowCardsCount, redCard, avg_minutes_played)
+              VALUES(?,?,?,?,?,?,?,?,?) """
+
+    conn_local = get_new_connection()
+    try:
+        cur = conn_local.cursor()
+        cur.execute(
+            sql,
+            (
+                match_id,
+                player_id,
+                was_fouled,
+                fouls,
+                shot_off_target,
+                shot_on_target,
+                yellow_cards_count,
+                red_card,
+                avg_minutes_played,
+            ),
+        )
+        conn_local.commit()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        cur.close()
+        conn_local.close()
+
+    # Print a confirmation message
+    # print(f"Data for player ID {player_id} in match ID {match_id} successfully added.")
+
+
+def team_detail(team_id):
+    start_time = time.time()
+    # Fetch team details
+    team_url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}"
+    team_response = requests.get(team_url, headers=HEADERS)
+    team = team_response.json().get("team", {})
+
+    # Fetch players for the team
+    players_url = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/players"
+    players_response = requests.get(players_url, headers=HEADERS)
+    players = players_response.json().get("players", [])
+
+    # Fetch the last 5 matches for the team
+    matches_url = (
+        f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/previous/0"
+    )
+    next_matches_response = requests.get(matches_url, headers=HEADERS)
+    all_matches = next_matches_response.json().get("events", [])
+    # print(all_matches[0]["status"])
+
+    # Fetch the next match for the team
+    next_matches_url = (
+        f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/next/0"
+    )
+    next_matches_response = requests.get(next_matches_url, headers=HEADERS)
+    next_matches = next_matches_response.json().get("events", [])
+    next_match_id = next_matches[0]["id"]
+
+    near_matches_url = (
+        next_matches_url
+    ) = f"https://footapi7.p.rapidapi.com/api/team/{team_id}/matches/near"
+    near_matches_response = requests.get(near_matches_url, headers=HEADERS)
+    near_matches = near_matches_response.json().get("previousEvent", [])
+    previous_event = near_matches["status"]
+    # print(previous_event)
+    previous_match_id = near_matches["id"]
+
+    near_matches_response = requests.get(near_matches_url, headers=HEADERS)
+    near_matches = near_matches_response.json().get("nextEvent", [])
+    next_match = near_matches["status"]
+    next_match_id = near_matches["id"]
+    if previous_event["type"] == "inprogress":
+        # print("game in progress")
+        live_match_id = previous_match_id
+    if previous_event["type"] != "inprogress":
+        # print("game coming up")
+        live_match_id = next_match_id
+
+    # Fetch lineups for the match
+    lineup_url = f"https://footapi7.p.rapidapi.com/api/match/{live_match_id}/lineups"
+    lineup_response = requests.get(lineup_url, headers=HEADERS)
+
+    # Check if the lineup request was successful
+    if lineup_response.status_code == 200:
+        try:
+            lineups = lineup_response.json()
+
+        except JSONDecodeError:
+            print("Failed to decode JSON for lineups data")
+            lineups = {"home": {}, "away": {}}  # Provide a default value
+    else:
+        print(f"Failed to fetch lineups. Status code: {lineup_response.status_code}")
+        lineups = {
+            "home": {},
+            "away": {},
+        }  # Provide a default value in case of failure
+
+    try:
+        lineups = lineup_response.json()
+        # Fetch and save player images for home players
+        for player in lineups["home"]["players"]:
+            player_id = player["player"]["id"]
+        # Fetch and save player images for away players
+        for player in lineups["away"]["players"]:
+            player_id = player["player"]["id"]
+    except ValueError:
+        print(
+            f"Error decoding JSON for lineups of match {live_match_id}. Response content: {lineup_response.content}"
+        )
+        lineups = {
+            "home": {},
+            "away": {},
+        }  # Ensuring structure with home and away keys
+
+    # Check to see if they currently have a match
+
+    last_5_matches = all_matches[::-1][:10]
+    last_5_finished_matches = [
+        match
+        for match in all_matches[::-1]
+        if match.get("status", {}).get("type") == "finished"
+    ][:10]
+
+    fouls_data = {}
+    cards_data = {}
+    avg_minutes_played = {}
+
+    for player_data in players:
+        player_id = player_data["player"]["id"]
+
+        # Initialize data structures for fouls and cards for this player
+        fouls_data[player_id] = {}
+        cards_data[player_id] = {}
+
+        total_minutes = 0
+        match_count = 0
+
+        for match in last_5_finished_matches:
+            match_id = match["id"]
+            exists, stats = fetch_statistics_if_exists(match_id, player_id)
+            if exists:
+                print(
+                    f"Data for match ID {match_id} and player ID {player_id} already exists."
+                )
+                # Unpack the statistics
+                (
+                    was_fouled,
+                    fouls,
+                    shot_off_target,
+                    shot_on_target,
+                    yellow_cards_count,
+                    red_card,
+                    avg_minutes_played,
+                ) = stats
+                fouls_data[player_id][match_id] = {
+                    "wasFouled": was_fouled,
+                    "fouls": fouls,
+                    "shotOffTarget": shot_off_target,
+                    "shotOnTarget": shot_on_target,
+                    "minutesPlayed": avg_minutes_played,  # Assuming avg_minutes_played refers to minutesPlayed
+                }
+                cards_data[player_id][match_id] = {
+                    "yellowCardsCount": yellow_cards_count,
+                    "redCard": red_card,
+                }
+                continue
+
+            # API request to get statistics for player in the match
+            statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/player/{player_id}/statistics"
+            statistics_response = requests.get(statistics_url, headers=HEADERS)
+
+            # Check if response status code is OK (200) and handle JSON decode error
+            if statistics_response.status_code == 200:
+                try:
+                    statistics = statistics_response.json().get("statistics", {})
+
+                    # Store the fouls data in the nested dictionary
+                    fouls_data[player_id][match_id] = {
+                        "wasFouled": statistics.get("wasFouled", 0),
+                        "fouls": statistics.get("fouls", 0),
+                        "shotOffTarget": statistics.get("shotOffTarget", 0),
+                        "shotOnTarget": statistics.get("onTargetScoringAttempt", 0),
+                        "minutesPlayed": statistics.get("minutesPlayed", 0),
+                    }
+
+                    # Update total_minutes and match_count for average calculation
+                    minutes = fouls_data[player_id][match_id].get("minutesPlayed", 0)
+                    if isinstance(minutes, (int, float)):
+                        total_minutes += minutes
+                        match_count += 1
+
+                except JSONDecodeError:
+                    # print( f"Failed to decode JSON for match {match_id} and player {player_id}")
+                    fouls_data[player_id][match_id] = {
+                        "wasFouled": "no data",
+                        "fouls": "no data",
+                        "shotOffTarget": "no data",
+                        "shotOnTarget": "no data",
+                        "minutesPlayed": "no data",
+                    }
+
+            cards_data[player_id][match_id] = {
+                "yellowCardsCount": 0,
+                "redCard": False,
+            }
+
+            # API request to get incidents for the match
+            incidents_url = (
+                f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
+            )
+            incidents_response = requests.get(incidents_url, headers=HEADERS)
+
+            try:
+                if incidents_response.status_code == 200:
+                    try:
+                        incidents = incidents_response.json().get("incidents", [])
+                        yellow_cards_count = sum(
+                            1
+                            for incident in incidents
+                            if incident.get("incidentClass") in ["yellow", "yellowRed"]
+                            and incident.get("player", {}).get("id") == player_id
+                        )
+
+                        red_card = any(
+                            incident
+                            for incident in incidents
+                            if incident.get("incidentClass") in ["red", "yellowRed"]
+                            and incident.get("player", {}).get("id") == player_id
+                        )
+
+                        cards_data[player_id][match_id] = {
+                            "yellowCardsCount": yellow_cards_count,
+                            "redCard": red_card,
+                        }
+
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON from the response")
+                        # Handle the error, e.g., by logging it and setting incidents to an empty list
+                        incidents = []
+                else:
+                    print(
+                        f"Failed to fetch incidents. Status code: {incidents_response.status_code}"
+                    )
+                    incidents = []  # Set default as empty list on failure
+
+                # Calculate the average and store it outside the inner match loop
+                avg_minutes = total_minutes / match_count if match_count > 0 else 0
+                avg_minutes_played[player_id] = avg_minutes
+
+            except Exception as e:
+                print(f"An error occurred: {e}")
+            # Pass fouls_data, cards_data, and avg_minutes_played to your template
+            # Pass avg_minutes_played as a dictionary to your insert_data function
+            insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played)
+
+
+get_fixtures()
