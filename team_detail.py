@@ -4,6 +4,12 @@ from flask import Flask, render_template, jsonify
 from config import HEADERS
 from requests.exceptions import JSONDecodeError
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+import logging
+import os
+from logging.handlers import RotatingFileHandler
+import random
 
 # Establish a database connection
 conn = sqlite3.connect("database.sqlite")
@@ -40,6 +46,58 @@ def create_table():
 # Call create_table function to ensure table exists
 create_table()
 
+# Configure rotating file logger for player stats
+LOG_PATH = os.path.join(os.path.dirname(__file__), "player_stats.log")
+player_logger = logging.getLogger("player_stats")
+player_logger.setLevel(logging.INFO)
+if not player_logger.handlers:
+    _handler = RotatingFileHandler(LOG_PATH, maxBytes=1_000_000, backupCount=3)
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    player_logger.addHandler(_handler)
+    player_logger.propagate = False
+
+
+def _parse_retry_after(headers):
+    try:
+        val = headers.get("Retry-After") or headers.get("retry-after")
+        if not val:
+            return None
+        return float(val)
+    except Exception:
+        return None
+
+
+def http_get_with_retry(url, headers, max_attempts=8, backoff_base=0.75, backoff_cap=10.0):
+    attempts = 0
+    delays = []
+    last_resp = None
+    while attempts < max_attempts:
+        attempts += 1
+        resp = requests.get(url, headers=headers)
+        status = resp.status_code
+        if status == 200:
+            return resp, attempts, delays
+        # Retry on rate limits and transient errors (do NOT retry 204)
+        if status in (420, 429, 408, 500, 502, 503, 504):
+            retry_after = _parse_retry_after(resp.headers)
+            wait = retry_after if retry_after is not None else min(
+                backoff_cap, backoff_base * (2 ** (attempts - 1)) + random.random() * 0.25
+            )
+            try:
+                print(f"Retry {attempts} ({status}) for {url} — waiting {wait:.2f}s")
+            except Exception:
+                pass
+            try:
+                time.sleep(wait)
+            except Exception:
+                pass
+            delays.append(wait)
+            last_resp = resp
+            continue
+        # Non-retriable
+        return resp, attempts, delays
+    return (last_resp or resp), attempts, delays
+
 
 def get_new_connection():
     return sqlite3.connect("database.sqlite")
@@ -67,29 +125,40 @@ def fetch_statistics_if_exists(match_id, player_id):
         return False, None  # Record does not exist, return False and None
 
 
-def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_dict):
-    fouls_data = fouls_data[player_id].get(match_id, {})
-    cards_data = cards_data[player_id].get(match_id, {})
+def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_dict, api_context=None, source="api"):
+    fouls_entry = fouls_data[player_id].get(match_id, {})
+    cards_entry = cards_data[player_id].get(match_id, {})
 
-    # Extract average minutes played for the player
-    if isinstance(avg_minutes_played_dict, dict):
-        avg_minutes_played = avg_minutes_played_dict.get(player_id, 0)
+    # Store per-match minutesPlayed in the DB (column name kept for compatibility)
+    if isinstance(fouls_entry, dict):
+        avg_minutes_played = fouls_entry.get("minutesPlayed", 0)
     else:
-        # Handle the error or assign a default value
         avg_minutes_played = 0
-        print("Warning: avg_minutes_played_dict is not a dictionary.")
 
-    was_fouled = fouls_data.get("wasFouled", 0)
-    fouls = fouls_data.get("fouls", 0)
-    shot_off_target = fouls_data.get("shotOffTarget", 0)
-    shot_on_target = fouls_data.get("shotOnTarget", 0)
-    yellow_cards_count = cards_data.get("yellowCardsCount", 0)
-    red_card = cards_data.get("redCard", False)
+    was_fouled = fouls_entry.get("wasFouled", 0)
+    fouls = fouls_entry.get("fouls", 0)
+    shot_off_target = fouls_entry.get("shotOffTarget", 0)
+    shot_on_target = fouls_entry.get("shotOnTarget", 0)
+    yellow_cards_count = cards_entry.get("yellowCardsCount", 0)
+    red_card = cards_entry.get("redCard", False)
 
-    sql = """ INSERT INTO player_match_statistics(match_id, player_id, wasFouled, fouls, shotOffTarget, shotOnTarget, yellowCardsCount, redCard, avg_minutes_played)
-              VALUES(?,?,?,?,?,?,?,?,?) """
+    sql = (
+        "INSERT INTO player_match_statistics(\n"
+        "  match_id, player_id, wasFouled, fouls, shotOffTarget, shotOnTarget, yellowCardsCount, redCard, avg_minutes_played\n"
+        ") VALUES(?,?,?,?,?,?,?,?,?)\n"
+        "ON CONFLICT(match_id, player_id) DO UPDATE SET\n"
+        "  wasFouled=excluded.wasFouled,\n"
+        "  fouls=excluded.fouls,\n"
+        "  shotOffTarget=excluded.shotOffTarget,\n"
+        "  shotOnTarget=excluded.shotOnTarget,\n"
+        "  yellowCardsCount=excluded.yellowCardsCount,\n"
+        "  redCard=excluded.redCard,\n"
+        "  avg_minutes_played=excluded.avg_minutes_played;"
+    )
 
     conn_local = get_new_connection()
+    db_success = False
+    db_error = None
     try:
         cur = conn_local.cursor()
         cur.execute(
@@ -107,14 +176,283 @@ def insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played_
             ),
         )
         conn_local.commit()
+        db_success = True
     except Exception as e:
         print(f"An error occurred: {e}")
+        db_error = str(e)
     finally:
         cur.close()
         conn_local.close()
 
     # Print a confirmation message
     print(f"Data for player ID {player_id} in match ID {match_id} successfully added.")
+    # Log full stats for debugging
+    try:
+        player_logger.info(
+            json.dumps(
+                {
+                    "action": "insert_player_match_statistics",
+                    "match_id": match_id,
+                    "player_id": player_id,
+                    "wasFouled": was_fouled,
+                    "fouls": fouls,
+                    "shotOffTarget": shot_off_target,
+                    "shotOnTarget": shot_on_target,
+                    "yellowCardsCount": yellow_cards_count,
+                    "redCard": bool(red_card),
+                    "minutesPlayed": avg_minutes_played,
+                    "source": source,
+                    "db": {"success": db_success, "error": db_error},
+                    "api": api_context or {},
+                }
+            )
+        )
+    except Exception as log_err:
+        print(f"Logging failed for player {player_id}, match {match_id}: {log_err}")
+
+
+def fetch_player_matches_concurrently(player_id, finished_matches):
+    """Fetch a player's last N finished matches concurrently and return aggregates.
+
+    Returns a tuple: (player_fouls_dict, player_cards_dict, avg_minutes)
+    """
+    player_fouls = {}
+    player_cards = {}
+    minutes_values = []
+
+    match_ids = [m.get("id") for m in finished_matches if m and m.get("id") is not None]
+    player_start_time = time.time()
+    try:
+        print(f"Player {player_id}: starting fetch for {len(match_ids)} matches")
+    except Exception:
+        pass
+
+    # First, check DB for existing rows (sequential to avoid sqlite locking)
+    missing_ids = []
+    api_ctx_by_mid = {}
+    for match_id in match_ids:
+        exists, stats = fetch_statistics_if_exists(match_id, player_id)
+        if exists and stats:
+            (
+                was_fouled,
+                fouls,
+                shot_off_target,
+                shot_on_target,
+                yellow_cards_count,
+                red_card,
+                avg_minutes,
+            ) = stats
+            existing_is_valid = False
+            try:
+                existing_is_valid = (
+                    (isinstance(avg_minutes, (int, float)) and avg_minutes > 0)
+                    or any([
+                        was_fouled, fouls, shot_off_target, shot_on_target,
+                        yellow_cards_count, 1 if red_card else 0
+                    ])
+                )
+            except Exception:
+                existing_is_valid = False
+
+            if existing_is_valid:
+                player_fouls[match_id] = {
+                    "wasFouled": was_fouled or 0,
+                    "fouls": fouls or 0,
+                    "shotOffTarget": shot_off_target or 0,
+                    "shotOnTarget": shot_on_target or 0,
+                    "minutesPlayed": avg_minutes or 0,
+                }
+                player_cards[match_id] = {
+                    "yellowCardsCount": yellow_cards_count or 0,
+                    "redCard": bool(red_card),
+                }
+                if isinstance(avg_minutes, (int, float)):
+                    minutes_values.append(avg_minutes)
+            else:
+                # Stale/empty row; refetch to correct it
+                missing_ids.append(match_id)
+        else:
+            missing_ids.append(match_id)
+
+    def fetch_for_match(mid):
+        statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{mid}/player/{player_id}/statistics"
+        incidents_url = f"https://footapi7.p.rapidapi.com/api/match/{mid}/incidents"
+
+        statistics = {}
+        yellow_cards_count = 0
+        red_card = False
+        statistics_status = None
+        incidents_status = None
+        incidents_len = 0
+        # Extra diagnostics for non-200s (e.g., 420/429)
+        statistics_headers = {}
+        incidents_headers = {}
+        statistics_body = None
+        incidents_body = None
+
+        stats_attempts = 0
+        stats_delays = []
+        try:
+            r, stats_attempts, stats_delays = http_get_with_retry(
+                statistics_url, HEADERS, max_attempts=10
+            )
+            statistics_status = r.status_code
+            if statistics_status == 200:
+                try:
+                    statistics = r.json().get("statistics", {})
+                except JSONDecodeError:
+                    statistics = {}
+            else:
+                try:
+                    statistics_body = r.text[:500]
+                except Exception:
+                    statistics_body = None
+                try:
+                    # Pull a few relevant headers for rate limit context
+                    statistics_headers = {
+                        k: r.headers.get(k)
+                        for k in [
+                            "retry-after",
+                            "x-ratelimit-remaining",
+                            "x-ratelimit-reset",
+                            "x-ratelimit-limit",
+                        ]
+                    }
+                except Exception:
+                    statistics_headers = {}
+        except Exception as e:
+            print(f"Error fetching statistics for match {mid}, player {player_id}: {e}")
+
+        inc_attempts = 0
+        inc_delays = []
+        try:
+            r2, inc_attempts, inc_delays = http_get_with_retry(
+                incidents_url, HEADERS, max_attempts=10
+            )
+            incidents_status = r2.status_code
+            if incidents_status == 200:
+                try:
+                    incidents = r2.json().get("incidents", [])
+                    incidents_len = len(incidents)
+                    yellow_cards_count = sum(
+                        1
+                        for incident in incidents
+                        if incident.get("incidentClass") in ["yellow", "yellowRed"]
+                        and incident.get("player", {}).get("id") == player_id
+                    )
+
+                    red_card = any(
+                        incident
+                        for incident in incidents
+                        if incident.get("incidentClass") in ["red", "yellowRed"]
+                        and incident.get("player", {}).get("id") == player_id
+                    )
+                except json.JSONDecodeError:
+                    incidents = []
+            else:
+                incidents = []
+                try:
+                    incidents_body = r2.text[:500]
+                except Exception:
+                    incidents_body = None
+                try:
+                    incidents_headers = {
+                        k: r2.headers.get(k)
+                        for k in [
+                            "retry-after",
+                            "x-ratelimit-remaining",
+                            "x-ratelimit-reset",
+                            "x-ratelimit-limit",
+                        ]
+                    }
+                except Exception:
+                    incidents_headers = {}
+        except Exception as e:
+            print(f"Error fetching incidents for match {mid}, player {player_id}: {e}")
+
+        fouls_entry = {
+            "wasFouled": statistics.get("wasFouled", 0),
+            "fouls": statistics.get("fouls", 0),
+            "shotOffTarget": statistics.get("shotOffTarget", 0),
+            "shotOnTarget": statistics.get("onTargetScoringAttempt", 0),
+            "minutesPlayed": statistics.get("minutesPlayed", 0),
+        }
+        cards_entry = {"yellowCardsCount": yellow_cards_count, "redCard": red_card}
+        api_ctx = {
+            "statistics": {
+                "url": statistics_url,
+                "status_code": statistics_status,
+                "ok": statistics_status == 200,
+                "response": statistics,
+                "status_explanation": (
+                    "Enhance Your Calm / Rate limited" if statistics_status in (420, 429) else None
+                ),
+                "headers": statistics_headers,
+                "body": statistics_body,
+                "attempts": stats_attempts,
+                "delays_s": stats_delays,
+            },
+            "incidents": {
+                "url": incidents_url,
+                "status_code": incidents_status,
+                "ok": incidents_status == 200,
+                "response_count": incidents_len,
+                "status_explanation": (
+                    "Enhance Your Calm / Rate limited" if incidents_status in (420, 429) else None
+                ),
+                "headers": incidents_headers,
+                "body": incidents_body,
+                "attempts": inc_attempts,
+                "delays_s": inc_delays,
+            },
+        }
+        return mid, fouls_entry, cards_entry, api_ctx
+
+    if missing_ids:
+        max_workers = min(3, len(missing_ids))
+        total_jobs = len(missing_ids)
+        completed_jobs = 0
+        last_percent = -1
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(fetch_for_match, mid) for mid in missing_ids]
+            for fut in as_completed(futures):
+                mid, fouls_entry, cards_entry, api_ctx = fut.result()
+                player_fouls[mid] = fouls_entry
+                player_cards[mid] = cards_entry
+                api_ctx_by_mid[mid] = api_ctx
+                minutes = fouls_entry.get("minutesPlayed", 0)
+                if isinstance(minutes, (int, float)):
+                    minutes_values.append(minutes)
+                completed_jobs += 1
+                if total_jobs > 0:
+                    percent = int((completed_jobs * 100) / total_jobs)
+                    if percent != last_percent:
+                        elapsed = time.time() - player_start_time
+                        print(f"Player {player_id}: fetched {completed_jobs}/{total_jobs} matches ({percent}%) — {elapsed:.1f}s elapsed")
+                        last_percent = percent
+    try:
+        total_elapsed = time.time() - player_start_time
+        print(f"Player {player_id}: completed in {total_elapsed:.2f}s")
+    except Exception:
+        pass
+
+    avg_minutes = (sum(minutes_values) / len(minutes_values)) if minutes_values else 0.0
+
+    # Insert newly fetched matches into DB with the computed average
+    if missing_ids:
+        avg_map = {player_id: avg_minutes}
+        for mid in missing_ids:
+            insert_data(
+                mid,
+                player_id,
+                {player_id: player_fouls},
+                {player_id: player_cards},
+                avg_map,
+                api_context=api_ctx_by_mid.get(mid),
+                source="api",
+            )
+
+    return player_fouls, player_cards, avg_minutes
 
 
 def team_detail(team_id):
@@ -214,136 +552,30 @@ def team_detail(team_id):
     cards_data = {}
     avg_minutes_played = {}
 
+    total_players = len(players)
+    current_player_index = 0
+    players_start_time = time.time()
     for player_data in players:
         player_id = player_data["player"]["id"]
 
-        # Initialize data structures for fouls and cards for this player
-        fouls_data[player_id] = {}
-        cards_data[player_id] = {}
+        player_fouls, player_cards, player_avg = fetch_player_matches_concurrently(
+            player_id, last_5_finished_matches
+        )
 
-        total_minutes = 0
-        match_count = 0
+        fouls_data[player_id] = player_fouls
+        cards_data[player_id] = player_cards
+        avg_minutes_played[player_id] = player_avg
+        current_player_index += 1
+        if total_players > 0:
+            pcent = int((current_player_index * 100) / total_players)
+            elapsed_players = time.time() - players_start_time
+            print(f"Players processed: {current_player_index}/{total_players} ({pcent}%) — {elapsed_players:.1f}s elapsed")
 
-        for match in last_5_finished_matches:
-            match_id = match["id"]
-            exists, stats = fetch_statistics_if_exists(match_id, player_id)
-            if exists:
-                print(
-                    f"Data for match ID {match_id} and player ID {player_id} already exists."
-                )
-                # Unpack the statistics
-                (
-                    was_fouled,
-                    fouls,
-                    shot_off_target,
-                    shot_on_target,
-                    yellow_cards_count,
-                    red_card,
-                    avg_minutes_played,
-                ) = stats
-                fouls_data[player_id][match_id] = {
-                    "wasFouled": was_fouled,
-                    "fouls": fouls,
-                    "shotOffTarget": shot_off_target,
-                    "shotOnTarget": shot_on_target,
-                    "minutesPlayed": avg_minutes_played,  # Assuming avg_minutes_played refers to minutesPlayed
-                }
-                cards_data[player_id][match_id] = {
-                    "yellowCardsCount": yellow_cards_count,
-                    "redCard": red_card,
-                }
-                continue
-
-            # API request to get statistics for player in the match
-            statistics_url = f"https://footapi7.p.rapidapi.com/api/match/{match_id}/player/{player_id}/statistics"
-            statistics_response = requests.get(statistics_url, headers=HEADERS)
-
-            # Check if response status code is OK (200) and handle JSON decode error
-            if statistics_response.status_code == 200:
-                try:
-                    statistics = statistics_response.json().get("statistics", {})
-
-                    # Store the fouls data in the nested dictionary
-                    fouls_data[player_id][match_id] = {
-                        "wasFouled": statistics.get("wasFouled", 0),
-                        "fouls": statistics.get("fouls", 0),
-                        "shotOffTarget": statistics.get("shotOffTarget", 0),
-                        "shotOnTarget": statistics.get("onTargetScoringAttempt", 0),
-                        "minutesPlayed": statistics.get("minutesPlayed", 0),
-                    }
-
-                    # Update total_minutes and match_count for average calculation
-                    minutes = fouls_data[player_id][match_id].get("minutesPlayed", 0)
-                    if isinstance(minutes, (int, float)):
-                        total_minutes += minutes
-                        match_count += 1
-
-                except JSONDecodeError:
-                    print(
-                        f"Failed to decode JSON for match {match_id} and player {player_id}"
-                    )
-                    fouls_data[player_id][match_id] = {
-                        "wasFouled": "no data",
-                        "fouls": "no data",
-                        "shotOffTarget": "no data",
-                        "shotOnTarget": "no data",
-                        "minutesPlayed": "no data",
-                    }
-
-            cards_data[player_id][match_id] = {
-                "yellowCardsCount": 0,
-                "redCard": False,
-            }
-
-            # API request to get incidents for the match
-            incidents_url = (
-                f"https://footapi7.p.rapidapi.com/api/match/{match_id}/incidents"
-            )
-            incidents_response = requests.get(incidents_url, headers=HEADERS)
-
-            try:
-                if incidents_response.status_code == 200:
-                    try:
-                        incidents = incidents_response.json().get("incidents", [])
-                        yellow_cards_count = sum(
-                            1
-                            for incident in incidents
-                            if incident.get("incidentClass") in ["yellow", "yellowRed"]
-                            and incident.get("player", {}).get("id") == player_id
-                        )
-
-                        red_card = any(
-                            incident
-                            for incident in incidents
-                            if incident.get("incidentClass") in ["red", "yellowRed"]
-                            and incident.get("player", {}).get("id") == player_id
-                        )
-
-                        cards_data[player_id][match_id] = {
-                            "yellowCardsCount": yellow_cards_count,
-                            "redCard": red_card,
-                        }
-
-                    except json.JSONDecodeError:
-                        print("Error decoding JSON from the response")
-                        # Handle the error, e.g., by logging it and setting incidents to an empty list
-                        incidents = []
-                else:
-                    print(
-                        f"Failed to fetch incidents. Status code: {incidents_response.status_code}"
-                    )
-                    incidents = []  # Set default as empty list on failure
-
-                # Calculate the average and store it outside the inner match loop
-                avg_minutes = total_minutes / match_count if match_count > 0 else 0
-                avg_minutes_played[player_id] = avg_minutes
-                print("Mins", avg_minutes)
-
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            # Pass fouls_data, cards_data, and avg_minutes_played to your template
-            # Pass avg_minutes_played as a dictionary to your insert_data function
-            insert_data(match_id, player_id, fouls_data, cards_data, avg_minutes_played)
+    try:
+        total_elapsed_players = time.time() - players_start_time
+        print(f"All players processed in {total_elapsed_players:.2f}s")
+    except Exception:
+        pass
 
     return render_template(
         "team_detail.html",

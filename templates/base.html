@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Football{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --chakra-colors-bg: #0b1220;
+        --chakra-colors-card: #111827;
+        --chakra-colors-border: #1f2937;
+        --chakra-colors-text: #e5e7eb;
+        --chakra-colors-subtle: #9ca3af;
+        --chakra-colors-accent: #38b2ac;
+        --chakra-radius: 0.75rem;
+      }
+
+      body {
+        background-color: var(--chakra-colors-bg);
+        color: var(--chakra-colors-text);
+      }
+
+      .card {
+        background-color: var(--chakra-colors-card);
+        border: 1px solid var(--chakra-colors-border);
+        border-radius: var(--chakra-radius);
+      }
+
+      .accent {
+        color: var(--chakra-colors-accent);
+      }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="min-h-screen antialiased">
+    <header class="border-b border-slate-800/60 bg-slate-900/40 backdrop-blur">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/" class="text-lg font-semibold tracking-tight">Football</a>
+        <nav class="text-sm text-slate-300">
+          <a href="/" class="hover:text-white">Fixtures</a>
+        </nav>
+      </div>
+    </header>
+    <main class="max-w-6xl mx-auto px-4 py-6">
+      {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+  </body>
+  </html>
+
+

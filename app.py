@@ -27,7 +27,7 @@ app.config[
 cache = Cache(app)
 
 HEADERS = {
-    "X-RapidAPI-Key": "b42bc11359msh98e3d09a1e9557dp173da4jsn260d881d9ab9",
+    "X-RapidAPI-Key": "38160290a2msh11355be25f16cf3p1a5fadjsn9d11a902417b",
     "X-RapidAPI-Host": "footapi7.p.rapidapi.com",
 }
 
